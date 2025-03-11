@@ -1,7 +1,7 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
-#include <unistd.h>
+#include <sys/types.h>
 
 // Maximum sizes for various fields
 #define MAX_TITLE_SIZE 200
@@ -45,10 +45,6 @@ typedef struct {
     int num_results;     // Number of results in doc_ids
     pid_t client_pid;    // Client PID to identify which client the response is for
 } Response;
-
-// FIFO paths
-#define SERVER_FIFO "/tmp/dserver_fifo"
-#define CLIENT_FIFO_TEMPLATE "/tmp/dclient_%d_fifo"
 
 // Helper functions for protocol operations
 int create_pipes();
