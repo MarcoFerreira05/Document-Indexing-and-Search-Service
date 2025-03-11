@@ -1,19 +1,14 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
+#include <unistd.h>
 #include <sys/types.h>
 
 // Maximum sizes for various fields
-#define MAX_TITLE_SIZE 200
-#define MAX_AUTHORS_SIZE 200
-#define MAX_YEAR_SIZE 4
-#define MAX_PATH_SIZE 64
-#define MAX_KEYWORD_SIZE 64
-#define MAX_RESPONSE_SIZE 1024
-#define MAX_FIFO_PATH 64
+#define MAX_PIPE_SIZE 256
 
 #define REQUEST_PIPE "/tmp/request_pipe"
-#define RESPONSE_PIPE "/tmp/response_pipe"
+#define RESPONSE_PIPE "/tmp/response_pipe_%d"
 
 // Command types
 typedef enum {
@@ -29,29 +24,28 @@ typedef enum {
 // Request structure
 typedef struct {
     RequestType type;    // Type of request
-    int doc_id;          // Document ID (for operations that need it)
-    char data[512];      // Data payload (varies by request type)
-    int num_processes;   // Number of processes for parallel search
+    char **metadata;   // Metadata associated with the request
+    int document_id; // Number of documents
     pid_t client_pid;    // Client PID for identifying the client
 } Request;
 
 // Response structure
 typedef struct {
     int status;          // Status code (0 for success, error code otherwise)
-    int doc_id;          // Document ID (for ADD_DOCUMENT response)
-    char data[1024];     // Data payload (varies by response type)
-    int count;           // Count (for COUNT_LINES response)
-    int doc_ids[100];    // Document IDs (for SEARCH_DOCUMENTS response)
-    int num_results;     // Number of results in doc_ids
-    pid_t client_pid;    // Client PID to identify which client the response is for
+    char **metadata;   // Metadata associated with the request
+    int document_id; // Number of documents
+    pid_t client_pid;    // Client PID for identifying the client
 } Response;
 
 // Helper functions for protocol operations
-int create_pipes();
+int create_request_pipe();
+int create_response_pipe(pid_t client_pid);
 int send_request(Request *req);
 int receive_request(Request *req);
-int send_response(Response *res);
+int send_response(Response *res, pid_t client_pid);
 int receive_response(Response *res, pid_t client_pid);
+int close_request_pipe();
+int close_response_pipe(pid_t client_pid);
 
 #endif // PROTOCOL_H
 
