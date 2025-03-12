@@ -11,35 +11,54 @@ int main(int argc, char **argv) {
     }
 
     char option = argv[1][1];
-    
-    Request *request = (Request*) malloc(sizeof(Request));
+    pid_t pid = getpid();
+
+    char response_pipe[MAX_PIPE_SIZE];
+    snprintf(pipe, sizeof(pipe), RESPONSE_PIPE_TEMPLATE, pid);
+
+    Packet *request;
     switch (option)
     {
     case 'a':
-        request->type = ADD_DOCUMENT;
-        request->metadata = &argv[2];
-        request->client_pid = getpid();
-        send_request(request);
+        request = create_packet(ADD_DOCUMENT, PENDING, response_pipe,
+                                -1, argv[2], pid);
         break;
     case 'c':
-        request->type = QUERY_DOCUMENT;
-        request->document_id = atoi(argv[2]);
-        request->client_pid = getpid();
-        send_request(request);
+        request = create_packet(QUERY_DOCUMENT, PENDING, response_pipe,
+                                atoi(argv[2]), NULL, pid);
         break;
     case 'd':
-        request->type = DELETE_DOCUMENT;
-        request->document_id = atoi(argv[2]);
-        request->client_pid = getpid();
-        send_request(request);
+        request = create_packet(DELETE_DOCUMENT, PENDING, response_pipe,
+                                atoi(argv[2]), NULL, pid);
+        break;
+    case 'f':
+        request = create_packet(SHUTDOWN_SERVER, PENDING, response_pipe,
+                                -1, NULL, pid);
         break;
     default:
         perror("Invalid option\n");
         exit(EXIT_FAILURE);
         break;
     }
-    Response *response = (Response*) malloc(sizeof(Response));
-    receive_response(response, getpid());
-    free(request);
+    send_packet(request, REQUEST_PIPE);
+
+    Packet *response = receive_packet(response_pipe);
+
+    unlink(response_pipe);
+
+    if (response == NULL) {
+        perror("Failed to receive response\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (response->status == FAILURE) {
+        perror("Request failed\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    // ...
+
+    delete_packet(response);
+
     return 0;
 }

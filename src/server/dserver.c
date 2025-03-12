@@ -7,66 +7,53 @@
 // static Cache cache = NULL;
 static Index *index = NULL;
 static int run = 1;
+static id = 1;
 
-int handle_add_document(Request *request, Response *response) {
-    char **metadata = request->metadata;
-    int document_id = index_add(index, metadata);
-    if (document_id < 0) {
-        perror("Failed to add document metadata to index\n");
-        return -1;
-    }
-    response->document_id = document_id;
-    return 0;
+Packet *handle_add_document(Packet *request) {
+    return create_packet(ADD_DOCUMENT, SUCCESS, request->response_pipe,
+                         id++, NULL, request->client_pid);
 }
 
-int handle_query_document(Request *request, Response *response) {
-    int document_id = request->document_id;
+Packet *handle_query_document(Packet *request) {
+    return create_packet(QUERY_DOCUMENT, SUCCESS, request->response_pipe,
+                         id++, NULL, request->client_pid);
 
 }
 
-int handle_delete_document(Request *request, Response *response) {
-
+Packet *handle_delete_document(Packet *request) {
+    return create_packet(DELETE_DOCUMENT, SUCCESS, request->response_pipe,
+                         id++, NULL, request->client_pid);
 }
 
-int handle_shutdown_server(Request *request, Response *response) {
+Packet *handle_shutdown_server(Packet *request) {
     run = 0;
-    response->status = 0;
-    return 0;
+    return create_packet(SHUTDOWN_SERVER, SUCCESS, request->response_pipe,
+                         id++, NULL, request->client_pid);
 }
 
-int handle_request(Request *request) {
-    Response *response = (Response*)malloc(sizeof(Response));
-    response->client_pid = request->client_pid;
+int handle_request(Packet *request) {
     
+    Packet *response;
+
     switch (request->type) {
         case ADD_DOCUMENT:
-            response->status = handle_add_document(request, response);
+            response = handle_add_document(request);
             break;
         case QUERY_DOCUMENT:
-            response->status = handle_query_document(request, response);
+            response = handle_query_document(request);
             break;
         case DELETE_DOCUMENT:
-            response->status = handle_delete_document(request, response);
-            break;
-        case COUNT_LINES:
-            response->status = handle_shutdown_server(request, response); // debug
-            break;
-        case SEARCH_DOCUMENTS:
-            response->status = handle_shutdown_server(request, response); // debug
-            break;
-        case SEARCH_PARALLEL:
-            response->status = handle_shutdown_server(request, response); // debug
+            response =handle_delete_document(request);
             break;
         case SHUTDOWN_SERVER:
-            response->status = handle_shutdown_server(request, response);
+            response = handle_shutdown_server(request);
             break;
         default:
             perror("Invalid request type\n");
             return -1;
     }
     
-    // Send response (defined in protocol.h)
-    if (send_response(response, request->client_pid) != 0) {
+    if (send_packet(response, request->response_pipe) != 0) {
         perror("Failed to send response\n");
         return -1;
     }
@@ -74,13 +61,7 @@ int handle_request(Request *request) {
     return 0;
 }
 
-void server_run(char *documents_folder) {
-
-    // Create request pipe
-    if (create_request_pipe() != 0) {
-        perror("Failed to create request pipe\n");
-        exit(EXIT_FAILURE);
-    }
+void server_run(char *documents_folder, int cache_size) {
 
     // Initialize index
     index = index_init();
@@ -89,20 +70,27 @@ void server_run(char *documents_folder) {
         exit(EXIT_FAILURE);
     }
 
+    // Create request pipe
+    if (create_pipe(REQUEST_PIPE) != 0) {
+        perror("Failed to create request pipe\n");
+        exit(EXIT_FAILURE);
+    }
+
     while (run) {
-        Request *request;
+        Packet *request = receive_packet(REQUEST_PIPE);
 
         // Receive request
-        int result = receive_request(request);
-        if (result == 0) {
+        if (request != NULL) {
             // Handle request
             handle_request(request);
-        } else if (result < 0) {
+        } else {
             // Error receiving request
             perror("Failed to receive request\n");
         }
-        
-        // Small delay to prevent CPU hogging ??
+
+        delete_packet(request);
+
+        // Small delay to prevent CPU hogging (TBC)
         // usleep(10000);  // 10ms
     }
 
@@ -123,7 +111,7 @@ int main(int argc, char **argv) {
     int cache_size = argc == 3 ? atoi(argv[2]) : 0;
 
     // Run server
-    server_run(documents_folder);
+    server_run(documents_folder, cache_size);
 
     return 0;
 }

@@ -8,9 +8,9 @@
 #define MAX_PIPE_SIZE 256
 
 #define REQUEST_PIPE "/tmp/request_pipe"
-#define RESPONSE_PIPE "/tmp/response_pipe_%d"
+#define RESPONSE_PIPE_TEMPLATE "/tmp/response_pipe_%d"
 
-// Command types
+// Request types
 typedef enum {
     ADD_DOCUMENT = 1,    // Add a new document
     QUERY_DOCUMENT,      // Query document metadata
@@ -21,31 +21,30 @@ typedef enum {
     SHUTDOWN_SERVER      // Shutdown server
 } RequestType;
 
-// Request structure
-typedef struct {
-    RequestType type;    // Type of request
-    char **metadata;   // Metadata associated with the request
-    int document_id; // Number of documents
-    pid_t client_pid;    // Client PID for identifying the client
-} Request;
+// Response statuses
+typedef enum {
+    SUCCESS = 0,
+    FAILURE,
+    PENDING
+} ResponseStatus;
 
-// Response structure
+// Packet struct
 typedef struct {
-    int status;          // Status code (0 for success, error code otherwise)
-    char **metadata;   // Metadata associated with the request
-    int document_id; // Number of documents
-    pid_t client_pid;    // Client PID for identifying the client
-} Response;
+    RequestType type;
+    ResponseStatus status;
+    char *response_pipe;
+    int document_id;
+    char **metadata;
+    pid_t client_pid;
+} Packet;
 
 // Helper functions for protocol operations
-int create_request_pipe();
-int create_response_pipe(pid_t client_pid);
-int send_request(Request *req);
-int receive_request(Request *req);
-int send_response(Response *res, pid_t client_pid);
-int receive_response(Response *res, pid_t client_pid);
-int close_request_pipe();
-int close_response_pipe(pid_t client_pid);
+int create_pipe(char *pipe_name);
+int close_pipe(char *pipe_name);
+Packet *create_packet(RequestType type, ResponseStatus status, char *response_pipe,
+                      int document_id, char **metadata, pid_t client_pid);
+int delete_packet(Packet *packet);
+int send_packet(Packet *packet, char *pipe_name);
+Packet *receive_packet(char *pipe_name);
 
-#endif // PROTOCOL_H
-
+#endif

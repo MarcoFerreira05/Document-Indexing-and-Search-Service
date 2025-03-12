@@ -1,74 +1,72 @@
 #include <include/common/protocol.h>
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
 
-int create_request_pipe() {
-    int fifo = mkfifo(REQUEST_PIPE, 0666);
+int create_pipe(char *pipe_name) {
+    int fifo = mkfifo(pipe, 0666);
     if (fifo < 0) {
-        perror("Failed to create request pipe\n");
+        perror("Failed to create pipe\n");
         return -1;
     }
     return 0;
 }
 
-int create_response_pipe(pid_t client_pid) {
-    char pipe_name[MAX_PIPE_SIZE];
-    snprintf(pipe_name, sizeof(pipe_name), RESPONSE_PIPE, client_pid);
-    int fifo = mkfifo(pipe_name, 0666);
-    if (fifo < 0) {
-        perror("Failed to create response pipe\n");
+int close_pipe(char *pipe_name) {
+    int result = unlink(pipe);
+    if (result < 0) {
+        perror("Failed to close pipe\n");
         return -1;
     }
     return 0;
 }
 
-int send_request(Request *request) {
-    int fd = open(REQUEST_PIPE, O_WRONLY);
-    if (fd < 0) {
-        perror("Failed to open request pipe\n");
-        return -1;
-    }
-    write(fd, request, sizeof(Request));
-    close(fd);
+Packet *create_packet(RequestType type, ResponseStatus status, char *response_pipe,
+                  int document_id, char **metadata, pid_t client_pid) {
+    Packet *packet = (Packet *)malloc(sizeof(Packet));
+    packet->type = type;
+    packet->status = status;
+    packet->response_pipe = response_pipe;
+    packet->document_id = document_id;
+    packet->metadata = metadata;
+    packet->client_pid = client_pid;
     return 0;
 }
 
-int receive_request(Request *request) {
-    int fd = open(REQUEST_PIPE, O_RDONLY);
-    if (fd < 0) {
-        perror("Failed to open request pipe\n");
-        return -1;
-    }
-    read(fd, request, sizeof(Request));
-    close(fd);
-    return 0;
+int delete_packet(Packet *packet) {
+    free(packet);
 }
 
-int send_response(Response *response, pid_t client_pid) {
-    char pipe_name[MAX_PIPE_SIZE];
-    snprintf(pipe_name, sizeof(pipe_name), RESPONSE_PIPE, client_pid);
+int send_packet(Packet *packet, char *pipe_name) {
     int fd = open(pipe_name, O_WRONLY);
     if (fd < 0) {
-        perror("Failed to open response pipe\n");
+        perror("Failed to open pipe\n");
         return -1;
     }
-    write(fd, response, sizeof(Response));
+    write(fd, packet, sizeof(Packet));
     close(fd);
     return 0;
 }
 
-int receive_response(Response *response, pid_t client_pid) {
-    char pipe_name[MAX_PIPE_SIZE];
-    snprintf(pipe_name, sizeof(pipe_name), RESPONSE_PIPE, client_pid);
+Packet *receive_packet(char *pipe_name) {
     int fd = open(pipe_name, O_RDONLY);
     if (fd < 0) {
-        perror("Failed to open response pipe\n");
-        return -1;
+        perror("Failed to open request pipe\n");
+        return NULL;
     }
-    read(fd, response, sizeof(Response));
+    Packet *packet = (Packet *)malloc(sizeof(Packet));
+    read(fd, packet, sizeof(Packet));
     close(fd);
-    unlink(pipe_name);
-    return 0;
+    return packet;
+}
+
+void debug_packet(Packet *packet) {
+    printf("RequestType: %d\n", packet->type);
+    printf("ResponseStatus: %d\n", packet->status);
+    printf("Document ID: %d\n", packet->document_id);
+    printf("Metadata: %s\n", packet->metadata);
+    printf("Client PID: %d\n", packet->client_pid);
 }
