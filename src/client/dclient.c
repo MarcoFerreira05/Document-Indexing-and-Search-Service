@@ -55,8 +55,6 @@ int main(int argc, char **argv) {
         perror("Request failed\n");
         exit(EXIT_FAILURE);
     }
-    
-    // ...
 
     delete_packet(response);
 

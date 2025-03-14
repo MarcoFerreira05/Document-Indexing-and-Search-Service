@@ -10,6 +10,7 @@ static int run = 1;
 static id = 1;
 
 Packet *handle_add_document(Packet *request) {
+    // ...
     return create_packet(ADD_DOCUMENT, SUCCESS, request->response_pipe,
                          id++, NULL, request->client_pid);
 }
