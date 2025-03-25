@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "include/common/protocol.h"
+#include <sys/types.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 /**
  * @brief Estrutura que representa um pacote de indexação de documentos.
@@ -19,25 +22,45 @@ typedef struct indexPackage{
 
 
 /**
- * @brief Gerencia o acesso ao índice de documentos.
+ * @brief Adiciona informação ao índice de documentos.
  *
- * Esta função verifica a existência do arquivo de índice, evita concorrência no acesso,
- * e executa operações no índice conforme o modo especificado.
+ * Esta função adiciona documentos ao índice.
  *
- * @param argument Ponteiro para os dados necessários para a operação (char* Key ou IndexPack).
- * @param mode Modo de operação, ação a ser realizada no índice, adição, consulta, eliminação.
- * @return Retorna um ponteiro para o resultado da operação realizada.
+ * @param argument Ponteiro para os dados para adicionar ao index (IndexPack).
+ * @return Retorna a Key do Ficheiro ou -1 em caso de erro.
  */
-void* IndexAcessManager(void* argument, int mode){
+int IndexAddManager(IndexPack argument){
 
     //Verificar se o arquivo Index existe 
-    //Se sim, verificar se não há concorrencia para acessar o arquivo e abrir o arquivo
-    //Se não, criar um novo arquivo index (Primeira execução do servidor)
+    int IndexFile = open("IndexFile.txt", O_RDONLY | O_CREAT | O_APPEND, 0600); 
 
-    //Depois, performar a operação de acordo com o modo 
-     
-    //fechar o arquivo
-    //retornar o resultado da operação
+    if(IndexFile == -1){
+        //Erro ao abrir o arquivo
+        perror("Erro ao abrir o arquivo de índice");
+        return -1;
+    }
+    
+    // -- Calcular Key do documento -- //
+    // Obter o offset atual antes da escrita para saber a Key do documento
+    off_t currentOffset = lseek(IndexFile, 0, SEEK_CUR);
+    if (currentOffset == -1) {
+        perror("Erro ao obter o offset atual");
+        close(IndexFile);
+        return -1;
+    }
+    int key = currentOffset / sizeof(IndexPack);
+
+
+    size_t bytesWritten = write(IndexFile,&argument, sizeof(IndexPack));
+
+    if(bytesWritten == -1){
+        //Erro ao escrever no arquivo
+        perror("Erro ao escrever no arquivo de índice");
+        return -1;
+    }
+
+    close(IndexFile);
+    return key; // Escrita bem sucedida
 }
 
 
@@ -48,9 +71,9 @@ void* IndexAcessManager(void* argument, int mode){
  * indexado e transforma-o numa struct para ser guradado e indexado no HD.
  *
  * @param ToIndex Ponteiro para um array de strings que representa o documento a indexar.
- * @return Retorna um ponteiro para a string com a key onde o mesmo foi indexado.
+ * @return Retorna a key onde o mesmo foi indexado ou -1 em caso de erro.
  */
-char* AddDocument(char **ToIndex){
+int AddDocument(char **ToIndex){
 
     //Criação do pacote a ser indexado
     IndexPack PackToIndex;
@@ -60,5 +83,5 @@ char* AddDocument(char **ToIndex){
     PackToIndex.path = strdup(ToIndex[4]);
 
     //Enviar pacote para indexação
-    IndexAcessManager(&PackToIndex, ADD_DOCUMENT);
+    return IndexAcessManager(PackToIndex);
 }
