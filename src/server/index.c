@@ -33,7 +33,7 @@ int IndexAddManager(IndexPack argument){
 
     //Verificar se o arquivo Index existe 
     int IndexFile = open("IndexFile.txt", O_RDONLY | O_CREAT | O_APPEND, 0600); 
-
+    
     if(IndexFile == -1){
         //Erro ao abrir o arquivo
         perror("Erro ao abrir o arquivo de índice");
@@ -58,6 +58,7 @@ int IndexAddManager(IndexPack argument){
         perror("Erro ao escrever no arquivo de índice");
         return -1;
     }
+    // Concorrência em falta aqui
 
     close(IndexFile);
     return key; // Escrita bem sucedida
@@ -82,6 +83,13 @@ int AddDocument(char **ToIndex){
     PackToIndex.year = strdup(ToIndex[3]);
     PackToIndex.path = strdup(ToIndex[4]);
 
-    //Enviar pacote para indexação
-    return IndexAcessManager(PackToIndex);
+    //Enviar pacote para indexação e retorna a key (ou -1 em caso de erro)
+    int Key = IndexAcessManager(PackToIndex);
+    
+    free(PackToIndex.Title);
+    free(PackToIndex.authors);
+    free(PackToIndex.year);
+    free(PackToIndex.path);
+
+    return Key;
 }
