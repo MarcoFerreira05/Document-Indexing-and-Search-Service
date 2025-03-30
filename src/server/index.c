@@ -93,3 +93,70 @@ int AddDocument(char **ToIndex){
 
     return Key;
 }
+
+
+/**
+ * @brief Consulta um documento no índice.
+ *
+ * Esta função auxiliar consulta um documento no índice e retorna o caminho do arquivo
+ * correspondente.
+ *
+ * @param key Chave do documento a ser consultado.
+ * @return Retorna o conteudo guardado na correspondente Key ou NULL em caso de erro.
+ */
+
+void* IndexConsultManager(int key){
+
+    //Verificar se o arquivo Index existe
+    int IndexFile = open("IndexFile.txt", O_RDONLY | O_CREAT, 0600);
+    if(IndexFile == -1){
+        //Erro ao abrir o arquivo
+        perror("Erro ao abrir o arquivo de índice");
+        return NULL;
+    }
+
+    // -- Calcular Offset do documento -- //
+    off_t offset = key * sizeof(IndexPack);
+    off_t offsetSeek = lseek(IndexFile, offset, SEEK_SET);
+    if (offsetSeek == -1) {
+        perror("Erro ao obter o offset do documento");
+        close(IndexFile);
+        return NULL;
+    }
+
+    void* pack = malloc(sizeof(IndexPack));
+    ssize_t bytesRead;
+    read(IndexFile, &pack, sizeof(IndexPack));
+
+    return pack;
+}
+
+/**
+ * @brief Consulta um documento no índice.
+ *
+ * Esta função consulta um documento no índice e retorna o caminho do arquivo
+ * correspondente.
+ *
+ * @param key Chave do documento a ser consultado.
+ * @return Retorna o conteudo guardado na correspondente Key ou NULL em caso de erro PRECISA DE FREE.
+ */
+char* consultDocument(int key){
+    
+    //Enviar key para consulta e retorna o conteudo (ou NULL em caso de erro)
+    IndexPack* PackToConsult = (IndexPack*) IndexConsultManager(key);    
+
+    if(PackToConsult == NULL){
+        //Erro ao consultar o documento
+        perror("Documento não encontrado");
+        return NULL;
+    }
+
+    //Tradução do pacote para string
+    char* content= malloc(256 * sizeof(char));
+    sprintf(content, "Title: %s\nAuthors: %s\nYear: %s\nPath: %s\n", PackToConsult->Title, PackToConsult->authors, PackToConsult->year, PackToConsult->path);
+    free(PackToConsult);
+    
+    return content;//retorno da string com o conteudo do documento
+}
+
+
