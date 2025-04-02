@@ -108,7 +108,7 @@ int AddDocument(char **ToIndex){
 void* IndexConsultManager(int key){
 
     //Verificar se o arquivo Index existe
-    int IndexFile = open("IndexFile.txt", O_RDONLY | O_CREAT, 0600);
+    int IndexFile = open("IndexFile.txt", O_RDONLY , 0600);
     if(IndexFile == -1){
         //Erro ao abrir o arquivo
         perror("Erro ao abrir o arquivo de índice");
@@ -151,6 +151,10 @@ char* consultDocument(int key){
         return NULL;
     }
 
+    if(PackToConsult-> Title == NULL){
+        perror("Entrada foi eliminada");
+    }
+
     //Tradução do pacote para string
     char* content= malloc(256 * sizeof(char));
     sprintf(content, "Title: %s\nAuthors: %s\nYear: %s\nPath: %s\n", PackToConsult->Title, PackToConsult->authors, PackToConsult->year, PackToConsult->path);
@@ -159,4 +163,64 @@ char* consultDocument(int key){
     return content;//retorno da string com o conteudo do documento
 }
 
+/**
+ * @brief Remove um documento do índice.
+ *
+ * Esta função remove um documento do índice.
+ *
+ * @param key Chave do documento a ser removido.
+ * @param DeletePackage Pacote de Indexação com os campos a NULL.
+ * @return Retorna 0 em caso de sucesso ou -1 em caso de erro.
+ */
+int IndexDeleteManager(int key,IndexPack BlankPackage){
 
+    //Verificar se o arquivo Index existe
+    int IndexFile = open("IndexFile.txt", O_WRONLY, 0600);
+    if(IndexFile == -1){
+        //Erro ao abrir o arquivo
+        perror("Erro ao abrir o arquivo de índice");
+        return -1;
+    }
+
+    // -- Calcular Offset do documento -- //
+    off_t offset = key * sizeof(IndexPack);
+    off_t offsetSeek = lseek(IndexFile, offset, SEEK_SET);
+    if (offsetSeek == -1) {
+        perror("Erro ao obter o offset do documento");
+        close(IndexFile);
+        return -1;
+    }
+
+    //Remover o documento
+    write(IndexFile, &BlankPackage, sizeof(IndexPack));
+    close(IndexFile);
+    return 0;
+
+}
+
+
+/**
+ * @brief Remove um documento do índice.
+ *
+ * Esta função remove um documento do índice.
+ *
+ * @param key Chave do documento a ser removido.
+ * @return Retorna 0 em caso de sucesso ou -1 em caso de erro.
+ */
+int deleteDocument(int key){
+
+    IndexPack BlankPack;
+    BlankPack.Title = NULL;
+    BlankPack.authors = NULL;
+    BlankPack.year = 0;
+    BlankPack.path = NULL;
+
+    if(IndexDeleteManager(key,BlankPack) == -1){
+        //Erro ao remover o documento
+        perror("Erro ao remover o documento");
+        return -1;
+    }else{
+        return 0;
+    }
+
+}
