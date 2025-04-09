@@ -17,7 +17,7 @@ typedef struct indexPackage{
     char Title[200];
     char authors[200];
     char year[4];
-    char path[200];
+    char path[64];
 
 }IndexPack;
 
