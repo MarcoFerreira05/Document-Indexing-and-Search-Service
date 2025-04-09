@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <string.h>
 
 /**
  * @brief Estrutura que representa um pacote de indexação de documentos.
@@ -13,10 +14,10 @@
  */
 typedef struct indexPackage{
 
-    char*   Title;
-    char*   authors;
-    char*   year;
-    char*   path;
+    char Title[200];
+    char authors[200];
+    char year[4];
+    char path[200];
 
 }IndexPack;
 
@@ -78,19 +79,14 @@ int AddDocument(char **ToIndex){
 
     //Criação do pacote a ser indexado
     IndexPack PackToIndex;
-    PackToIndex.Title = strdup(ToIndex[1]);
-    PackToIndex.authors = strdup(ToIndex[2]);
-    PackToIndex.year = strdup(ToIndex[3]);
-    PackToIndex.path = strdup(ToIndex[4]);
-
+    strcpy(PackToIndex.Title,ToIndex[1]);
+    strcpy(PackToIndex.authors,ToIndex[2]);
+    strcpy(PackToIndex.year,ToIndex[3]);
+    strcpy(PackToIndex.path,ToIndex[4]);
+    
     //Enviar pacote para indexação e retorna a key (ou -1 em caso de erro)
     int Key = IndexAcessManager(PackToIndex);
     
-    free(PackToIndex.Title);
-    free(PackToIndex.authors);
-    free(PackToIndex.year);
-    free(PackToIndex.path);
-
     return Key;
 }
 
@@ -172,7 +168,7 @@ char* consultDocument(int key){
  * @param DeletePackage Pacote de Indexação com os campos a NULL.
  * @return Retorna 0 em caso de sucesso ou -1 em caso de erro.
  */
-int IndexDeleteManager(int key,IndexPack BlankPackage){
+int IndexDeleteManager(int key,IndexPack *BlankPackage){
 
     //Verificar se o arquivo Index existe
     int IndexFile = open("IndexFile.txt", O_WRONLY, 0600);
@@ -210,12 +206,8 @@ int IndexDeleteManager(int key,IndexPack BlankPackage){
 int deleteDocument(int key){
 
     IndexPack BlankPack;
-    BlankPack.Title = NULL;
-    BlankPack.authors = NULL;
-    BlankPack.year = 0;
-    BlankPack.path = NULL;
 
-    if(IndexDeleteManager(key,BlankPack) == -1){
+    if(IndexDeleteManager(key,&BlankPack) == -1){
         //Erro ao remover o documento
         perror("Erro ao remover o documento");
         return -1;
