@@ -18,33 +18,28 @@ typedef enum {
     COUNT_LINES,         // Count lines containing keyword
     SEARCH_DOCUMENTS,    // Search documents containing keyword
     SEARCH_PARALLEL,     // Search documents in parallel
-    SHUTDOWN_SERVER      // Shutdown server
-} RequestType;
+    SHUTDOWN_SERVER,     // Shutdown server
 
-// Response statuses
-typedef enum {
-    SUCCESS = 0,
-    FAILURE,
-    PENDING
-} ResponseStatus;
+    SUCCESS,             // Success response
+    FAILURE              // Failure response
+} Code;
 
 // Packet struct
 typedef struct {
-    RequestType type;
-    ResponseStatus status;
+    Code code;
     char *response_pipe;
     int document_id;
     char **metadata;
-    pid_t client_pid;
 } Packet;
 
 // Helper functions for protocol operations
 int create_pipe(char *pipe_name);
 int close_pipe(char *pipe_name);
-Packet *create_packet(RequestType type, ResponseStatus status, char *response_pipe,
-                      int document_id, char **metadata, pid_t client_pid);
+Packet *create_packet(Code code, char *response_pipe,
+                      int document_id, char **metadata);
 int delete_packet(Packet *packet);
 int send_packet(Packet *packet, char *pipe_name);
 Packet *receive_packet(char *pipe_name);
+void debug_packet(char *title, Packet *packet); // debug
 
 #endif
