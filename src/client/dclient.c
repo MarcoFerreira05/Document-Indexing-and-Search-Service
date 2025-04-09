@@ -1,4 +1,4 @@
-#include "include/common/protocol.h"
+#include <include/common/protocol.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,49 +13,48 @@ int main(int argc, char **argv) {
     char option = argv[1][1];
     pid_t pid = getpid();
 
+    // Create response pipe
     char response_pipe[MAX_PIPE_SIZE];
-    snprintf(pipe, sizeof(pipe), RESPONSE_PIPE_TEMPLATE, pid);
+    snprintf(response_pipe, sizeof(pipe), RESPONSE_PIPE_TEMPLATE, pid);
 
+    // Create request packet
     Packet *request;
     switch (option)
     {
     case 'a':
-        request = create_packet(ADD_DOCUMENT, PENDING, response_pipe,
-                                -1, argv[2], pid);
+        request = create_packet(ADD_DOCUMENT, response_pipe, -1, &argv[2]);
         break;
     case 'c':
-        request = create_packet(QUERY_DOCUMENT, PENDING, response_pipe,
-                                atoi(argv[2]), NULL, pid);
+        request = create_packet(QUERY_DOCUMENT, response_pipe, atoi(argv[2]), NULL);
         break;
     case 'd':
-        request = create_packet(DELETE_DOCUMENT, PENDING, response_pipe,
-                                atoi(argv[2]), NULL, pid);
+        request = create_packet(DELETE_DOCUMENT, response_pipe, atoi(argv[2]), NULL);
         break;
     case 'f':
-        request = create_packet(SHUTDOWN_SERVER, PENDING, response_pipe,
-                                -1, NULL, pid);
+        request = create_packet(SHUTDOWN_SERVER, response_pipe, -1, NULL);
         break;
     default:
         perror("Invalid option\n");
         exit(EXIT_FAILURE);
         break;
     }
+
+    // Create response pipe
+    create_pipe(response_pipe);
+
+    // Send request
+    debug_packet("Request sent by client", request);
     send_packet(request, REQUEST_PIPE);
 
+    // Receive response and close response pipe
     Packet *response = receive_packet(response_pipe);
+    debug_packet("Response received by client", response);
+    close_pipe(response_pipe);
 
-    unlink(response_pipe);
+    // Process response
+    // ...
 
-    if (response == NULL) {
-        perror("Failed to receive response\n");
-        exit(EXIT_FAILURE);
-    }
-
-    if (response->status == FAILURE) {
-        perror("Request failed\n");
-        exit(EXIT_FAILURE);
-    }
-
+    // Delete response packet
     delete_packet(response);
 
     return 0;

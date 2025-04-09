@@ -24,15 +24,12 @@ int close_pipe(char *pipe_name) {
     return 0;
 }
 
-Packet *create_packet(RequestType type, ResponseStatus status, char *response_pipe,
-                  int document_id, char **metadata, pid_t client_pid) {
+Packet *create_packet(Code code, char *response_pipe, int document_id, char **metadata) {
     Packet *packet = (Packet *)malloc(sizeof(Packet));
-    packet->type = type;
-    packet->status = status;
+    packet->code = code;
     packet->response_pipe = response_pipe;
     packet->document_id = document_id;
     packet->metadata = metadata;
-    packet->client_pid = client_pid;
     return 0;
 }
 
@@ -48,6 +45,7 @@ int send_packet(Packet *packet, char *pipe_name) {
     }
     write(fd, packet, sizeof(Packet));
     close(fd);
+    delete_packet(packet);
     return 0;
 }
 
@@ -63,10 +61,11 @@ Packet *receive_packet(char *pipe_name) {
     return packet;
 }
 
-void debug_packet(Packet *packet) {
-    printf("RequestType: %d\n", packet->type);
-    printf("ResponseStatus: %d\n", packet->status);
+ // debug
+void debug_packet(char *title, Packet *packet) {
+    printf("%s\n", title);
+    printf("Code: %d\n", packet->code);
+    printf("Response pipe: %d\n", packet->response_pipe);
     printf("Document ID: %d\n", packet->document_id);
     printf("Metadata: %s\n", packet->metadata);
-    printf("Client PID: %d\n", packet->client_pid);
 }
