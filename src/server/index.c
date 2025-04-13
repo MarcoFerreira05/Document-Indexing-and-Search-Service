@@ -1,10 +1,10 @@
 #include <stdlib.h>
 #include <string.h>
-#include "include/common/protocol.h"
+#include "protocol.h"
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <string.h>
+#include <stdio.h>
 
 /**
  * @brief Estrutura que representa um pacote de indexação de documentos.
@@ -214,3 +214,4 @@ int deleteDocument(int key){
     }else{
         return 0;
     }
+}
