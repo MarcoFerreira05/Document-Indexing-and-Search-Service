@@ -4,17 +4,25 @@
 #include <sys/wait.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <glib.h>
 
+
+// apenas para teste
+char* get_path(int key) {
+    char *path = malloc(sizeof(char) * 12);
+
+    snprintf(path, 12, "teste%d.txt", key);
+
+    return path;
+}
 
 
 int search_keyword_in_file(int key, char *keyword) {
     /* interação com a estrutura central
     get_packet(key)???
-    ainda falta definir como é que vão funcionar os múltiplos processos de procura do servidor,
-    para enviar o resultado da consulta
     */
 
-    char *file_path = "teste.txt"; // apenas para teste
+    char *file_path = get_path(key);
 
     int fildes[2];
     if(pipe(fildes) == -1) {
@@ -62,15 +70,45 @@ int search_keyword_in_file(int key, char *keyword) {
     }
     line_count[bytes_read-1] = '\0';
 
-    /*este print é apenas para verificar se funciona, falta enviar o resultado por algum pipe para o processo
-    que está a fazer esta consulta*/
-    printf("%s aparece em %d linhas\n", keyword, atoi(line_count));
-
     close(fildes[0]);
+    free(file_path);
 
-    return 0;
+    return atoi(line_count);
 }
 
-int main() {
-    return search_keyword_in_file(0, "ficheiro");
+
+
+GArray* docs_with_keyword(GArray *keys, char *keyword) {
+    GArray *docs_with_keyword = g_array_new(FALSE, TRUE, sizeof(int));
+
+    int i, key;
+    for(i = 0; i < keys->len; i++) {
+        key = g_array_index(keys, int, i);
+        if(search_keyword_in_file(key, keyword) > 0) g_array_append_val(docs_with_keyword, key);
+    }
+
+    return docs_with_keyword;
+}
+
+
+// apenas para teste
+int main(int argc, char **argv) {
+    if(argc == 3) printf("%d\n", search_keyword_in_file(atoi(argv[1]), argv[2]));
+    else {
+        GArray *keys = g_array_new(FALSE, TRUE, sizeof(int));
+        for(int i = 1; i <= 5; i++) {
+            g_array_append_val(keys, i);
+        }
+
+        GArray *docs_with_kw = docs_with_keyword(keys, argv[1]);
+
+        for(int i = 0; i < docs_with_kw->len; i++) {
+            printf("%d\n", g_array_index(docs_with_kw, int, i));
+        }
+
+        g_array_free(keys, FALSE);
+        g_array_free(docs_with_kw, FALSE);
+    }
+    
+    return 0;
 }
