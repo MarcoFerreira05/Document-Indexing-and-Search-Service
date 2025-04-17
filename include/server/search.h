@@ -36,4 +36,25 @@ int search_keyword_in_file(int key, char *keyword);
  */
 GArray* docs_with_keyword(GArray *keys, char *keyword);
 
+
+/**
+ * @brief Determina, concorrentemente, quais os ficheiros que contêm uma palavra-chave.
+ * 
+ * São utilizados 2 pipes anónimos.
+ * Num deles, o pai escreve todas as chaves e os filhos lêm todos deste mesmo pipe.
+ * Para cada chave que vão buscar ao pipe, os filhos procuram a palavra no ficheiro,
+ * invocando a @c search_keyword_in_file , e se encontrarem escrevem a chave no outro pipe.
+ * Enquanto isto decorre, o pai lê do segundo pipe as chaves onde ocorreu a palavra e vai acrescentando ao array.
+ * O @c GArray devolvido deve ser libertado por quem invocou esta função.
+ * 
+ * @param keys Chaves de todos os documentos indexados pelo servidor.
+ * @param keyword Palavra a procurar.
+ * @param number_procs Número de processos a utilizar na procura.
+ * 
+ * @return Apontador para um array que contém as chaves dos ficheiros onde a palavra ocorre.
+ * 
+ * @note O tipo de @c keys poderá não ser este, isto é apenas para poder testar.
+ */
+GArray* docs_with_keyword_concurrent(GArray *keys, char *keyword, int number_procs);
+
 #endif

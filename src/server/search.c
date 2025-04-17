@@ -91,16 +91,109 @@ GArray* docs_with_keyword(GArray *keys, char *keyword) {
 }
 
 
+
+GArray* docs_with_keyword_concurrent(GArray *keys, char *keyword, int number_procs) {
+    // pipe para enviar as chaves aos filhos
+    int i, keys_pipe[2];
+
+    if(pipe(keys_pipe) == -1) {
+        perror("pipe");
+        return NULL;
+    }
+
+    // pipe para os filhos devolverem as chaves dos ficheiros onde a keyword ocorre
+    int found_pipe[2];
+
+    if(pipe(found_pipe) == -1) {
+        perror("pipe");
+        return NULL;
+    }
+
+    // lançar todos os processos
+    pid_t child_id;
+    for(i = 0; i < number_procs; i++) {
+        child_id = fork();
+
+        if(child_id == -1) {
+            perror("fork");
+            return NULL;
+        }
+
+        else if(child_id == 0) { // filhos vão lendo do pipe à medida que estão prontos e escrevem para o outro pipe as keys onde encontram
+            close(keys_pipe[1]);
+            close(found_pipe[0]);
+
+            ssize_t br;
+            int key;
+            while((br = read(keys_pipe[0], &key, sizeof(int))) != 0) {
+                if(search_keyword_in_file(key, keyword) > 0) {
+                    if(write(found_pipe[1], &key, sizeof(int)) == -1) {
+                        perror("write");
+                        close(keys_pipe[0]);
+                        close(found_pipe[1]);
+                        _exit(-1);
+                    }
+                }
+            }
+            
+            close(keys_pipe[0]);
+            close(found_pipe[1]);
+            _exit(0);
+        }
+    }
+
+    close(keys_pipe[0]);
+    close(found_pipe[1]);
+    int key;
+
+    // enviar chaves para os filhos
+    for(i = 0; i < keys->len; i++) {
+        key = g_array_index(keys, int, i);
+        if(write(keys_pipe[1], &key, sizeof(int)) == -1) {
+            perror("write");
+            return NULL;
+        }
+    }
+
+    close(keys_pipe[1]);
+
+    // recolher chaves onde foi encontrado
+    GArray *docs_with_keyword = g_array_new(FALSE, TRUE, sizeof(int));
+    ssize_t br;
+    while((br = read(found_pipe[0], &key, sizeof(int))) != 0) {
+        if(br == -1) {
+            perror("read");
+            return NULL;
+        }
+
+        g_array_append_val(docs_with_keyword, key);
+    }
+
+    close(found_pipe[0]);
+
+    // recolher filhos
+    int child_status;
+    for(i = 0; i < number_procs; i++) {
+        wait(&child_status);
+        if(WIFEXITED(child_status) && WEXITSTATUS(child_status) != 0) {
+            printf("exit status %d\n", WEXITSTATUS(child_status));
+        }
+    }
+
+    return docs_with_keyword;
+}
+
+
 // apenas para teste
 int main(int argc, char **argv) {
     if(argc == 3) printf("%d\n", search_keyword_in_file(atoi(argv[1]), argv[2]));
     else {
         GArray *keys = g_array_new(FALSE, TRUE, sizeof(int));
-        for(int i = 1; i <= 5; i++) {
+        for(int i = 1; i <= 6; i++) {
             g_array_append_val(keys, i);
         }
 
-        GArray *docs_with_kw = docs_with_keyword(keys, argv[1]);
+        GArray *docs_with_kw = docs_with_keyword_concurrent(keys, argv[1], 3);
 
         for(int i = 0; i < docs_with_kw->len; i++) {
             printf("%d\n", g_array_index(docs_with_kw, int, i));
