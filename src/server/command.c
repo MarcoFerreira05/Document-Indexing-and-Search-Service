@@ -77,14 +77,10 @@ char* consultDocument(int key){
  */
 int deleteDocument(int key){
 
-    IndexPack BlankPack = g_malloc(sizeof(struct indexPackage));
-    BlankPack->deleted = 1;
-
-    if(IndexDeleteManager(key,&BlankPack) == -1){
+    if(cacheDelete(key) == -1){
         //Erro ao remover o documento
         perror("Erro ao remover o documento");
         return -1;
-    }else{
-        return 0;
     }
+    return 0;
 }

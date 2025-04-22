@@ -41,7 +41,7 @@ int cacheAdd(void *value);
  * @return A pointer to the value associated with the key, or NULL if the key is not found
  *         or the cache is not initialized.
  */
-void *cacheGet(int *key);
+void *cacheGet(int key);
 
 /**
  * @brief Removes a key-value pair from the cache.
@@ -51,7 +51,7 @@ void *cacheGet(int *key);
  * @param key The key to remove from the cache (string).
  * @return 0 on success, -1 if the cache is not initialized.
  */
-int cacheRemove(int *key);
+int cacheDelete(int key);
 
 /**
  * @brief Destroys the cache and frees all associated memory.

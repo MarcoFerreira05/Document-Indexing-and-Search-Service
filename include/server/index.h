@@ -18,6 +18,16 @@
 #include "command.h"
 
 /**
+ * @brief Adiciona retorna a proxima Key disponivel.
+ *
+ * Retorna a proxima Key disponivel para adicionar um novo documento ao índice.
+ *
+ *
+ * @return Retorna a Key do Ficheiro ou -1 em caso de erro.
+ */
+int IndexGetKey();
+
+/**
  * @brief Adiciona um documento ao índice.
  *
  * Esta função adiciona um novo documento ao arquivo de índice, calculando uma chave única
@@ -26,7 +36,7 @@
  * @param argument Ponteiro para a estrutura do documento a ser indexado.
  * @return Retorna a chave única do documento em caso de sucesso ou -1 em caso de erro.
  */
-int IndexAddManager(void* argument);
+int IndexAddManager(IndexPack argument, int key);
 
 /**
  * @brief Consulta um documento no índice.

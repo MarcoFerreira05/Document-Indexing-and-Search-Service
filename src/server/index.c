@@ -9,6 +9,36 @@
 
 
 /**
+ * @brief Adiciona retorna a proxima Key disponivel.
+ *
+ * Retorna a proxima Key disponivel para adicionar um novo documento ao índice.
+ *
+ *
+ * @return Retorna a Key do Ficheiro ou -1 em caso de erro.
+ */
+int IndexGetKey(){
+    //Verificar se o arquivo Index existe
+    int IndexFile = open("IndexFile.txt", O_RDONLY | O_CREAT| O_APPEND, 0600);
+    if(IndexFile == -1){
+        //Erro ao abrir o arquivo
+        perror("Erro ao abrir o arquivo de índice");
+        return -1;
+    }
+
+    // -- Calcular Offset do documento -- //
+    off_t offset = lseek(IndexFile, 0, SEEK_END);
+    if (offset == -1) {
+        perror("Erro ao obter o offset do documento");
+        close(IndexFile);
+        return -1;
+    }
+
+    close(IndexFile);
+    return offset / sizeof(IndexPack); // Retorna a chave do próximo documento
+}
+
+
+/**
  * @brief Adiciona informação ao índice de documentos.
  *
  * Esta função adiciona documentos ao índice.
@@ -16,10 +46,10 @@
  * @param argument Ponteiro para os dados para adicionar ao index (IndexPack).
  * @return Retorna a Key do Ficheiro ou -1 em caso de erro.
  */
-int IndexAddManager(void* argument){
+int IndexAddManager(IndexPack argument,int key){
 
     //Verificar se o arquivo Index existe 
-    int IndexFile = open("IndexFile.txt", O_RDONLY | O_CREAT | O_APPEND, 0600); 
+    int IndexFile = open("IndexFile.txt", O_RDONLY | O_CREAT, 0600); 
     
     if(IndexFile == -1){
         //Erro ao abrir o arquivo
@@ -27,18 +57,17 @@ int IndexAddManager(void* argument){
         return -1;
     }
     
-    // -- Calcular Key do documento -- //
-    // Obter o offset atual antes da escrita para saber a Key do documento
-    off_t currentOffset = lseek(IndexFile, 0, SEEK_CUR);
-    if (currentOffset == -1) {
-        perror("Erro ao obter o offset atual");
+    // -- Calcular Offset do documento -- //
+    off_t offset = key * sizeof(IndexPack);
+    off_t offsetSeek = lseek(IndexFile, offset, SEEK_SET);
+    if (offsetSeek == -1) {
+        perror("Erro ao obter o offset do documento");
         close(IndexFile);
-        return -1;
+        return NULL;
     }
-    int key = currentOffset / sizeof(IndexPack);
 
 
-    size_t bytesWritten = write(IndexFile,&argument, sizeof(IndexPack));
+    size_t bytesWritten = write(IndexFile,argument, sizeof(IndexPack));
 
     if(bytesWritten == -1){
         //Erro ao escrever no arquivo
@@ -118,7 +147,7 @@ int IndexDeleteManager(int key,IndexPack *BlankPackage){
     }
 
     //Remover o documento
-    write(IndexFile, &BlankPackage, sizeof(IndexPack));
+    write(IndexFile, *BlankPackage, sizeof(IndexPack));
     close(IndexFile);
     
     //Remover o documento do cache
