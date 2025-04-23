@@ -185,7 +185,7 @@ GArray* docs_with_keyword_concurrent(GArray *keys, char *keyword, int number_pro
 
 
 // apenas para teste
-int main(int argc, char **argv) {
+/*int main(int argc, char **argv) {
     if(argc == 3) printf("%d\n", search_keyword_in_file(atoi(argv[1]), argv[2]));
     else {
         GArray *keys = g_array_new(FALSE, TRUE, sizeof(int));
@@ -204,4 +204,4 @@ int main(int argc, char **argv) {
     }
     
     return 0;
-}
+}*/

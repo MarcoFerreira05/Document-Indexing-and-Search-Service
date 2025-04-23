@@ -53,5 +53,5 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-# Igonore VS Code config files
+# Ignore VS Code config files
 .vscode/
