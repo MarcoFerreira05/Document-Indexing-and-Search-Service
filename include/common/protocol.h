@@ -6,9 +6,11 @@
 
 // Maximum sizes for various fields
 #define MAX_PIPE_SIZE 256
+#define MAX_METADATA_FIELDS 4
+#define MAX_FIELDS_SIZE 256
 
-#define REQUEST_PIPE "/tmp/request_pipe"
-#define RESPONSE_PIPE_TEMPLATE "/tmp/response_pipe_%d"
+#define REQUEST_PIPE "request_pipe"
+#define RESPONSE_PIPE_TEMPLATE "response_pipe_%d"
 
 // Request types
 typedef enum {
@@ -27,9 +29,9 @@ typedef enum {
 // Packet struct
 typedef struct {
     Code code;
-    char *response_pipe;
+    char response_pipe[MAX_PIPE_SIZE];
     int document_id;
-    char **metadata;
+    char metadata[MAX_METADATA_FIELDS][MAX_FIELDS_SIZE];
 } Packet;
 
 // Helper functions for protocol operations
@@ -37,7 +39,7 @@ int create_pipe(char *pipe_name);
 int close_pipe(char *pipe_name);
 Packet *create_packet(Code code, char *response_pipe,
                       int document_id, char **metadata);
-int delete_packet(Packet *packet);
+void delete_packet(Packet *packet);
 int send_packet(Packet *packet, char *pipe_name);
 Packet *receive_packet(char *pipe_name);
 void debug_packet(char *title, Packet *packet); // debug
