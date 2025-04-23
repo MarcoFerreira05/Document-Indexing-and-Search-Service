@@ -6,7 +6,7 @@
 #include <string.h>
 #include "cache.h"
 #include "command.h"
-
+#include <stdio.h>
 
 /**
  * @brief Adiciona retorna a proxima Key disponivel.
@@ -63,7 +63,7 @@ int IndexAddManager(IndexPack argument,int key){
     if (offsetSeek == -1) {
         perror("Erro ao obter o offset do documento");
         close(IndexFile);
-        return NULL;
+        return -1;
     }
 
 
@@ -112,8 +112,14 @@ void* IndexConsultManager(int key){
     }
 
     void* pack = malloc(sizeof(IndexPack));
-    ssize_t bytesRead;
-    read(IndexFile, &pack, sizeof(IndexPack));
+    ssize_t bytesRead = read(IndexFile, &pack, sizeof(IndexPack));
+    if(bytesRead == -1){
+        //Erro ao ler o arquivo
+        perror("Erro ao ler o arquivo de índice");
+        free(pack);
+        close(IndexFile);
+        return NULL;
+    }
 
     return pack;
 }
@@ -149,12 +155,6 @@ int IndexDeleteManager(int key,IndexPack *BlankPackage){
     //Remover o documento
     write(IndexFile, *BlankPackage, sizeof(IndexPack));
     close(IndexFile);
-    
-    //Remover o documento do cache
-    if(cacheRemove(key) == -1){
-        perror("Erro ao remover o documento do cache");
-        return -1;
-    }
 
     return 0;
 

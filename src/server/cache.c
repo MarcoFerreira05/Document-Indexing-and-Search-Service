@@ -27,7 +27,7 @@ int cacheRemove(){
         else
         {
             if(cachePage->dirty == 1){
-                IndexPack pack = g_hash_table_lookup(Cache, cachePage->key);
+                IndexPack pack = g_hash_table_lookup(Cache, &cachePage->key);
                 if(pack != NULL){
                     if(IndexAddManager(pack,cachePage->key) == -1){
                         perror("Failed to write cache page to disk\n");
@@ -37,11 +37,12 @@ int cacheRemove(){
                 cachePage->dirty = 0;
             }
             
-            IndexPack pack = g_hash_table_lookup(Cache, cachePage->key);
+            IndexPack pack = g_hash_table_lookup(Cache, &cachePage->key);
             if(pack != NULL){
-                g_hash_table_remove(Cache, cachePage->key);
-                OnCache = g_list_remove_link(OnCache, cachePage);
-                g_list_free_1(cachePage);
+                g_hash_table_remove(Cache, &cachePage->key);
+                GList* page = g_list_find_custom(OnCache, &cachePage->key, (GCompareFunc)g_int_equal);
+                OnCache = g_list_remove_link(OnCache, page);
+                g_list_free_1(page);
                 free(pack);
             }
             break;
@@ -109,7 +110,7 @@ int cacheAdd(void *value) {
         }
     }
     
-    g_hash_table_insert(Cache, key, value);
+    g_hash_table_insert(Cache, &page->key, value);
     OnCache = g_list_append(OnCache, page);
     return key;
 
@@ -120,12 +121,12 @@ void* cacheGet(int key) {
     if(Cache == NULL){
         if(cacheInit() == -1){
             perror("Cache not initialized\n");
-            return -1;
+            return NULL;
         }
     }
 
 
-    IndexPack pack = g_hash_table_lookup(Cache, key);
+    IndexPack pack = g_hash_table_lookup(Cache, &key);
 
     if(pack == NULL){
 
@@ -150,11 +151,11 @@ void* cacheGet(int key) {
                 //Se a cache estiver cheia, remover o LRU element
                 if(cacheRemove() == -1){
                     perror("Failed to remove LRU element from cache\n");
-                    return -1;
+                    return NULL;
                 }
             }
 
-            g_hash_table_insert(Cache, key, pack);
+            g_hash_table_insert(Cache, &page->key, pack);
             OnCache = g_list_append(OnCache, page);
         }
 
@@ -174,9 +175,9 @@ int cacheDelete(int key) {
     }
 
     //Verifica se o documento existe no cache e elimina da cache
-    IndexPack pack = g_hash_table_lookup(Cache, key);
+    IndexPack pack = g_hash_table_lookup(Cache, &key);
     if(pack != NULL){
-        g_hash_table_remove(Cache, key);
+        g_hash_table_remove(Cache, &key);
         GList* page = g_list_find_custom(OnCache, &key, (GCompareFunc)g_int_equal);
         OnCache = g_list_remove_link(OnCache, page);
         g_list_free_1(page);
@@ -213,7 +214,7 @@ int cacheDestroy() {
     while(page != NULL){
         CachePage cachePage = (CachePage)page->data;
         if(cachePage->dirty == 1){
-            IndexPack pack = g_hash_table_lookup(Cache, cachePage->key);
+            IndexPack pack = g_hash_table_lookup(Cache, &cachePage->key);
             if(pack != NULL){
                 if(IndexAddManager(pack,cachePage->key) == -1){
                     perror("Failed to write cache page to disk\n");
