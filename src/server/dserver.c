@@ -1,36 +1,36 @@
 #include "protocol.h"
-#include "index.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
-// static Cache cache = NULL;
-// static Index *index = NULL;
-static int run = 1;
-static id = 1;
+int run = 1;
 
 Packet *handle_add_document(Packet *request) {
     // ...
-    return create_packet(SUCCESS, request->response_pipe, id, NULL);
+    Packet *response = create_packet(SUCCESS, REQUEST_PIPE, 123456, NULL);
+    return response;
 }
 
 Packet *handle_query_document(Packet *request) {
     // ...
-    return create_packet(SUCCESS, request->response_pipe, id, NULL);
+    return create_packet(SUCCESS, REQUEST_PIPE, 123456, NULL);
 }
 
 Packet *handle_delete_document(Packet *request) {
     // ...
-    return create_packet(SUCCESS, request->response_pipe, id, NULL);
+    return create_packet(SUCCESS, REQUEST_PIPE, 123456, NULL);
 }
 
 Packet *handle_shutdown_server(Packet *request) {
     run = 0;
-    return create_packet(SUCCESS, request->response_pipe, id, NULL);
+    return create_packet(SUCCESS, REQUEST_PIPE, 123456, NULL);
 }
 
-int handle_request(Packet *request) {
-    
+Packet *handle_request(Packet *request) {
     Packet *response;
 
     switch (request->code) {
@@ -48,52 +48,35 @@ int handle_request(Packet *request) {
             break;
         default:
             perror("Invalid request type\n");
-            return -1;
+            return NULL;
     }
-    
-    if (send_packet(response, request->response_pipe) != 0) {
-        perror("Failed to send response\n");
-        return -2;
-    }
-
-    
-    return 0;
+    return response;
 }
 
 void server_run(char *documents_folder, int cache_size) {
-    
-/*  // Initialize index
-    index = index_init();
-    if (index_init() == NULL) {
-        perror("Failed to initialize index\n");
-        exit(EXIT_FAILURE);
-    }
 
-    // Create request pipe
-    if (create_pipe(REQUEST_PIPE) != 0) {
-        perror("Failed to create request pipe\n");
-        exit(EXIT_FAILURE);
-    } */
+    // Create request pipeç
+    create_pipe(REQUEST_PIPE);
 
     while (run) {
         // Receive request
         Packet *request = receive_packet(REQUEST_PIPE);
+        debug_packet("[ Request received by server ]", request); // debug
 
         if (request != NULL) {
             // Handle request
-            if (handle_request(request) != 0) {
+            Packet *response = handle_request(request);
+            if (response != NULL) {
+                debug_packet("[ Response sent by server ]", response); // debug
+                send_packet(response, request->response_pipe);
+            } else {
+                // Error handling
                 perror("Failed to handle request\n");
             }
         } else {
             // Error receiving request
             perror("Failed to receive request\n");
         }
-
-        // Delete request packet
-        delete_packet(request);
-
-        // Small delay to prevent CPU hogging (TBC) // 10ms
-        // usleep(10000);
     }
 
     // Close request pipe

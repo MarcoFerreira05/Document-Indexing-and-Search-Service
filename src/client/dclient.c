@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
 
     // Create response pipe
     char response_pipe[MAX_PIPE_SIZE];
-    snprintf(response_pipe, sizeof(pipe), RESPONSE_PIPE_TEMPLATE, pid);
+    snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, pid);
 
     // Create request packet
     Packet *request;
@@ -39,16 +39,15 @@ int main(int argc, char **argv) {
         break;
     }
 
-    // Create response pipe
+    // Create response pipe and send request
     create_pipe(response_pipe);
-
-    // Send request
-    debug_packet("Request sent by client", request);
+    debug_packet("[ Request sent by client ]", request); // debug
     send_packet(request, REQUEST_PIPE);
+    printf("Request sent to server\n");
 
     // Receive response and close response pipe
     Packet *response = receive_packet(response_pipe);
-    debug_packet("Response received by client", response);
+    debug_packet("[ Response received by client ]", response); // debug
     close_pipe(response_pipe);
 
     // Process response

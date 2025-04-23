@@ -1,7 +1,6 @@
 CC = gcc
-CFLAGS = -Wall -g -Iinclude/server -Iinclude/common $(shell pkg-config --cflags glib-2.0)
+CFLAGS = -Wall -g -Iinclude/server -Iinclude/common -Iinclude/client
 #CFLAGS = -Wall -O2 -Iinclude/server -Iinclude/common $(shell pkg-config --cflags glib-2.0)
-LDFLAGS = $(shell pkg-config --libs glib-2.0)
 
 # Find all .c files in src subdirectories
 SRC_FILES := $(shell find src -type f -name "*.c")
