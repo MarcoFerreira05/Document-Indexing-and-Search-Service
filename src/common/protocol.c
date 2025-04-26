@@ -32,7 +32,7 @@ Packet *create_packet(Code code, char *response_pipe, int document_id, char **me
     strcpy(packet->response_pipe, response_pipe);
     packet->document_id = document_id;
     if (metadata != NULL) {
-        for (int i = 0; i < MAX_METADATA_FIELDS; i++) {
+        for (int i = 0; i < METADATA_FIELDS_COUNT; i++) {
             strcpy(packet->metadata[i], metadata[i]);
         }
     }
@@ -73,7 +73,7 @@ void debug_packet(char *title, Packet *packet) {
     printf("Code: %i\n", packet->code);
     printf("Response pipe: %s\n", packet->response_pipe);
     printf("Document ID: %d\n", packet->document_id);
-    for(int i = 0; i < MAX_METADATA_FIELDS; i++) {
+    for(int i = 0; i < METADATA_FIELDS_COUNT; i++) {
         printf("Metadata[%d]: %s\n", i, packet->metadata[i]);
     }
     printf("[ ------------------------ ]\n\n");
