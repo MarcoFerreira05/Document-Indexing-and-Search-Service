@@ -35,6 +35,8 @@
 *.i*86
 *.x86_64
 *.hex
+dserver
+dclient
 
 # Debug files
 *.dSYM/
@@ -51,5 +53,5 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-# Igonore VS Code config files
+# Ignore VS Code config files
 .vscode/
