@@ -8,14 +8,9 @@
 #include "command.h"
 #include <stdio.h>
 
-/**
- * @brief Adiciona retorna a proxima Key disponivel.
- *
- * Retorna a proxima Key disponivel para adicionar um novo documento ao índice.
- *
- *
- * @return Retorna a Key do Ficheiro ou -1 em caso de erro.
- */
+
+
+
 int IndexGetKey(){
     //Verificar se o arquivo Index existe
     int IndexFile = open("IndexFile.txt", O_RDONLY | O_CREAT| O_APPEND, 0600);
@@ -38,14 +33,7 @@ int IndexGetKey(){
 }
 
 
-/**
- * @brief Adiciona informação ao índice de documentos.
- *
- * Esta função adiciona documentos ao índice.
- *
- * @param argument Ponteiro para os dados para adicionar ao index (IndexPack).
- * @return Retorna a Key do Ficheiro ou -1 em caso de erro.
- */
+
 int IndexAddManager(IndexPack argument,int key){
 
     //Verificar se o arquivo Index existe 
@@ -82,15 +70,6 @@ int IndexAddManager(IndexPack argument,int key){
 
 
 
-/**
- * @brief Consulta um documento no índice.
- *
- * Esta função auxiliar consulta um documento no índice e retorna o caminho do arquivo
- * correspondente.
- *
- * @param key Chave do documento a ser consultado.
- * @return Retorna o conteudo guardado na correspondente Key ou NULL em caso de erro.
- */
 
 void* IndexConsultManager(int key){
     
@@ -124,15 +103,7 @@ void* IndexConsultManager(int key){
     return pack;
 }
 
-/**
- * @brief Remove um documento do índice.
- *
- * Esta função remove um documento do índice.
- *
- * @param key Chave do documento a ser removido.
- * @param DeletePackage Pacote de Indexação com os campos a NULL.
- * @return Retorna 0 em caso de sucesso ou -1 em caso de erro.
- */
+
 int IndexDeleteManager(int key,IndexPack *BlankPackage){
 
     //Verificar se o arquivo Index existe
@@ -159,4 +130,5 @@ int IndexDeleteManager(int key,IndexPack *BlankPackage){
     return 0;
 
 }
+
 

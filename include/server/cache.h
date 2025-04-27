@@ -1,66 +1,65 @@
-/**
- * @file cache.h
- * @brief Header file for the cache implementation using GLib's GHashTable.
- *
- * This file contains the function declarations for initializing, adding, 
- * retrieving, removing, and destroying a cache implemented with GLib's GHashTable.
- */
-
 #ifndef CACHE_H
 #define CACHE_H
 
+/**
+ * @file cache.h
+ * @brief Header file for document chach management.
+ *
+ * This file contains the function declarations and data structures used for
+ * managing the cache, including adding, consulting, and deleting documents.
+ */
+#include <stdio.h>
 #include <glib.h>
+#include <index.h>
 
 /**
- * @brief Initializes the cache.
- *
- * This function creates and initializes a global GHashTable to be used as a cache.
- * It ensures that the cache is only initialized once.
- *
- * @return 0 on success, -1 on failure (e.g., if the cache is already initialized).
+ * @brief Inicializa a cache.
+ * 
+ * Inicia a cache.
+ * 
+ * @return 0 em caso de sucesso, -1 em caso de erro.
  */
 int cacheInit();
 
 /**
- * @brief Adds a value to the cache.
- *
- * This function inserts a value into the cache. Both the key and value
- * are duplicated to ensure proper memory management.
- *
- * @param value The value associated with the key (void pointer).
- * @return 0 on success, -1 if the cache is not initialized.
+ * @brief Adiciona um novo valor à cache.
+ * 
+ * @param value Ponteiro para o valor a ser adicionado.
+ * @return Chave gerada para o novo valor, ou -1 em caso de erro.
  */
 int cacheAdd(void *value);
 
 /**
- * @brief Retrieves a value from the cache by its key.
- *
- * This function looks up a value in the cache using the provided key.
- *
- * @param key The key to look up in the cache (string).
- * @return A pointer to the value associated with the key, or NULL if the key is not found
- *         or the cache is not initialized.
+ * @brief Recupera um valor da a sua chave.
+ * 
+ * Caso não esteja na cache, tenta carregar do gestor de índice.
+ * 
+ * @param key Chave do valor a ser recuperado.
+ * @return Ponteiro para o valor encontrado ou NULL se não existir.
  */
-void *cacheGet(int key);
+void* cacheGet(int key);
 
 /**
- * @brief Removes a key-value pair from the cache.
- *
- * This function removes a key-value pair from the cache using the provided key.
- *
- * @param key The key to remove from the cache (string).
- * @return 0 on success, -1 if the cache is not initialized.
+ * @brief Elimina um valor e marca o documento como apagado.
+ * 
+ * @param key Chave do valor a ser eliminado.
+ * @return 0 em caso de sucesso, -1 em caso de erro.
  */
 int cacheDelete(int key);
 
 /**
- * @brief Destroys the cache and frees all associated memory.
- *
- * This function destroys the cache, freeing all memory associated with it.
- * After calling this function, the cache must be reinitialized before use.
- *
- * @return 0 on success, -1 if the cache is not initialized.
+ * @brief Liberta todos os recursos associados à cache.
+ * 
+ * Grava as páginas dirty em disco antes de destruir a cache.
+ * 
+ * @return 0 em caso de sucesso, -1 em caso de erro.
  */
 int cacheDestroy();
 
-#endif 
+/**
+ * @brief Lista todos os documentos presentes na cache.
+ * 
+ * @return Array de inteiros contendo as chaves dos documentos presentes.
+ */
+GArray* listDocuments();
+#endif // CACHE_H

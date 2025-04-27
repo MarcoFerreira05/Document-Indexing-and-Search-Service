@@ -43,25 +43,24 @@ int AddDocument(char **ToIndex){
  * @param key Chave do documento a ser consultado.
  * @return Retorna o conteudo guardado na correspondente Key ou NULL em caso de erro PRECISA DE FREE.
  */
-char* consultDocument(int key){
+char** consultDocument(int key){
     
     //Enviar key para consulta e retorna o conteudo (ou NULL em caso de erro)
     IndexPack PackToConsult = (IndexPack) cacheGet(key);    
 
     if(PackToConsult == NULL){
         //Erro ao consultar o documento
-        perror("Documento não encontrado");
+        //perror("Documento não encontrado");
         return NULL;
     }
 
-    if(PackToConsult-> Title == NULL){
-        perror("Entrada foi eliminada");
-    }
-
     //Tradução do pacote para string
-    char* content= malloc(256 * sizeof(char));
-    sprintf(content, "Title: %s\nAuthors: %s\nYear: %s\nPath: %s\n", PackToConsult->Title, PackToConsult->authors, PackToConsult->year, PackToConsult->path);
-    free(PackToConsult);
+    char**content = malloc(sizeof(char*)*4);
+    content[0] = strdup(PackToConsult->Title);
+    content[1] = strdup(PackToConsult->authors);
+    content[2] = strdup(PackToConsult->year);
+    content[3] = strdup(PackToConsult->path);    
+    
     
     return content;//retorno da string com o conteudo do documento
 }
@@ -82,5 +81,19 @@ int deleteDocument(int key){
         perror("Erro ao remover o documento");
         return -1;
     }
+
     return 0;
+}
+
+
+/**
+ * @brief Lista todos os documentos indexados.
+ *
+ * Esta função exibe uma lista de todos os documentos atualmente indexados no sistema.
+ *
+ * @return Retorna 0 em caso de sucesso ou -1 em caso de erro.
+ */
+GList* AllValidKeys(){
+
+    return listDocuments();
 }

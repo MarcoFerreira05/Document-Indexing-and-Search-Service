@@ -62,7 +62,7 @@ int deleteDocument(int key);
  * @return Ponteiro para a estrutura IndexPack contendo os metadados do documento,
  *         ou NULL em caso de erro.
  */
-IndexPack *getDocument(int key);
+char** consultDocument(int key);
 
 /**
  * @brief Lista todos os documentos indexados.
@@ -71,6 +71,6 @@ IndexPack *getDocument(int key);
  *
  * @return Retorna 0 em caso de sucesso ou -1 em caso de erro.
  */
-int listDocuments();
+GArray* AllValidKeys();
 
 #endif // COMMAND_H

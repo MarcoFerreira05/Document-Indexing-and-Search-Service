@@ -133,7 +133,7 @@ void* cacheGet(int key) {
         pack =  IndexConsultManager(key);
        
         if(pack == NULL || pack->deleted == 1){
-            perror("Document not found\n");
+            //perror("Document not found\n");
             return NULL;
         }
         else{
@@ -232,5 +232,26 @@ int cacheDestroy() {
     Cache = NULL;
     return 0;
 
+}
+
+GArray* listDocuments() {
+
+    GArray* documents = g_array_new(FALSE, FALSE, sizeof(int));
+    
+    if(Cache == NULL){
+        if(cacheInit() == -1){
+            perror("Cache not initialized\n");
+            return NULL;
+        }
+    }
+
+    for(int i = 0; i < AddOffset; i++){
+        IndexPack pack = cacheGet(i);
+        if(pack != NULL){
+            g_array_append_val(documents, i);    
+        }
+    }
+
+    return documents;
 }
 
