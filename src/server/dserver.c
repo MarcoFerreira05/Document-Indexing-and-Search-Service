@@ -1,77 +1,106 @@
 #include "protocol.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
+
+#define LOCK_FILE = "server.lock"
 
 int run = 1;
 
-Packet *handle_add_document(Packet *request) {
-    // ...
-    Packet *response = create_packet(SUCCESS, REQUEST_PIPE, 123456, NULL);
-    return response;
+void handle_add_document(Packet *request) {
+    int document_id = 3223423;
+    Packet *response = create_packet(SUCCESS, REQUEST_PIPE, document_id, -1, NULL, NULL);
+    send_packet(response, request->response_pipe);
 }
 
-Packet *handle_query_document(Packet *request) {
-    // ...
-    return create_packet(SUCCESS, REQUEST_PIPE, 123456, NULL);
+void handle_query_document(Packet *request) {
+    char *metadata[METADATA_FIELDS_COUNT] = {"Biblia",
+                                             "Apostolos",
+                                             "0034",
+                                             "src/books/biblia.txt"};
+    Packet *response = create_packet(SUCCESS, REQUEST_PIPE, -1, -1, NULL, metadata);
+    send_packet(response, request->response_pipe);
 }
 
-Packet *handle_delete_document(Packet *request) {
-    // ...
-    return create_packet(SUCCESS, REQUEST_PIPE, 123456, NULL);
+void handle_delete_document(Packet *request) {
+    Packet *response = create_packet(SUCCESS, REQUEST_PIPE, -1, -1, NULL, NULL);
+    send_packet(response, request->response_pipe);
 }
 
-Packet *handle_shutdown_server(Packet *request) {
-    run = 0;
-    return create_packet(SUCCESS, REQUEST_PIPE, 123456, NULL);
+void handle_count_lines(Packet *request) {
+    int lines = 34;
+    Packet *response = create_packet(SUCCESS, REQUEST_PIPE, -1, lines, NULL, NULL);
+    send_packet(response, request->response_pipe);
 }
 
-Packet *handle_request(Packet *request) {
+void handle_search_documents(Packet *request) {
+    int document_ids[4] = {00001, 00002, 00003, 00004};
     Packet *response;
+    for (int i = 0; i < 4; i++) {
+        response = create_packet(SUCCESS, REQUEST_PIPE, document_ids[i], -1, NULL, NULL);
+        debug_packet("[ Response sent by server ]", response);
+        send_packet(response, request->response_pipe);
+    }
+    response = create_packet(SUCCESS, NULL, -1, -1, NULL, NULL);
+    debug_packet("[ Response sent by server ]", response);
+    send_packet(response, request->response_pipe);
+}
+
+void handle_request(Packet *request) {
 
     switch (request->code) {
         case ADD_DOCUMENT:
-            response = handle_add_document(request);
+            handle_add_document(request);
             break;
         case QUERY_DOCUMENT:
-            response = handle_query_document(request);
+            handle_query_document(request);
             break;
         case DELETE_DOCUMENT:
-            response =handle_delete_document(request);
+            handle_delete_document(request);
             break;
-        case SHUTDOWN_SERVER:
-            response = handle_shutdown_server(request);
+        case COUNT_LINES:
+            handle_count_lines(request);
+            break;
+        case SEARCH_DOCUMENTS:
+            handle_search_documents(request);
             break;
         default:
             perror("Invalid request type\n");
-            return NULL;
     }
-    return response;
 }
+
 
 void server_run(char *documents_folder, int cache_size) {
 
-    // Create request pipeç
+    // Create request pipe
     create_pipe(REQUEST_PIPE);
 
     while (run) {
         // Receive request
         Packet *request = receive_packet(REQUEST_PIPE);
-        debug_packet("[ Request received by server ]", request); // debug
+        // debug_packet("[ Request received by server ]", request); // debug
 
         if (request != NULL) {
-            // Handle request
-            Packet *response = handle_request(request);
-            if (response != NULL) {
-                debug_packet("[ Response sent by server ]", response); // debug
-                send_packet(response, request->response_pipe);
-            } else {
-                // Error handling
-                perror("Failed to handle request\n");
+            if (request->code == SHUTDOWN_SERVER) {
+                run = 0;
+            }
+            else {
+                pid_t pid = fork();
+                if (pid == 0) {
+                    // Child process
+                    handle_request(request);
+                    exit(0);
+                } else if (pid < 0) {
+                    // Fork failed
+                    perror("Fork failed\n");
+                    Packet *response = create_packet(FAILURE, REQUEST_PIPE, -1, -1, NULL, NULL);
+                    send_packet(response, request->response_pipe);
+                    // debug_packet("[ Response sent by server ]", response); // debug
+                }
             }
         } else {
             // Error receiving request
@@ -79,13 +108,15 @@ void server_run(char *documents_folder, int cache_size) {
         }
     }
 
+    while (wait(NULL) > 0);
+
     // Close request pipe
     close_pipe(REQUEST_PIPE);
 }
 
 int main(int argc, char **argv) {
     // Check for correct number of arguments
-    if (argc < 2 && argc > 3) {
+    if (argc < 2 || argc > 3) {
         fprintf(stderr, "Usage: %s <documents_folder> [cache_size]\n"
                         "Note: <required> | [optional>\n", argv[0]);
         exit(EXIT_FAILURE);

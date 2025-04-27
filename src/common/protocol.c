@@ -26,11 +26,16 @@ int close_pipe(char *pipe_name) {
     return 0;
 }
 
-Packet *create_packet(Code code, char *response_pipe, int document_id, char **metadata) {
+Packet *create_packet(Code code, char *response_pipe, int document_id,
+                      int lines, char *keyword, char **metadata) {
     Packet *packet = (Packet *)malloc(sizeof(Packet));
     packet->code = code;
     strcpy(packet->response_pipe, response_pipe);
     packet->document_id = document_id;
+    packet->lines = lines;
+    if (keyword != NULL) {
+        strcpy(packet->keyword, keyword);
+    }
     if (metadata != NULL) {
         for (int i = 0; i < METADATA_FIELDS_COUNT; i++) {
             strcpy(packet->metadata[i], metadata[i]);
@@ -73,6 +78,8 @@ void debug_packet(char *title, Packet *packet) {
     printf("Code: %i\n", packet->code);
     printf("Response pipe: %s\n", packet->response_pipe);
     printf("Document ID: %d\n", packet->document_id);
+    printf("Lines: %d\n", packet->lines);
+    printf("Keyword: %s\n", packet->keyword);
     for(int i = 0; i < METADATA_FIELDS_COUNT; i++) {
         printf("Metadata[%d]: %s\n", i, packet->metadata[i]);
     }
