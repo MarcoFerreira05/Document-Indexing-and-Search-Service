@@ -38,16 +38,19 @@ void handle_count_lines(Packet *request) {
 }
 
 void handle_search_documents(Packet *request) {
-    int document_ids[4] = {00001, 00002, 00003, 00004};
-    Packet *response;
-    for (int i = 0; i < 4; i++) {
-        response = create_packet(SUCCESS, REQUEST_PIPE, document_ids[i], -1, NULL, NULL);
-        debug_packet("[ Response sent by server ]", response);
+    sleep(5);
+    int n = 4;
+    int document_ids[] = {00001, 00002, 00003, 00004};
+    for (int i = 0; i < n+1; i++) {
+        Packet *response;
+        if (i < n) {
+            response = create_packet(SUCCESS, REQUEST_PIPE, document_ids[i], -1, NULL, NULL);
+        } else {
+            response = create_packet(LAST_FRAG, REQUEST_PIPE, -1, -1, NULL, NULL);
+        }
+        //debug_packet("->", response);
         send_packet(response, request->response_pipe);
     }
-    response = create_packet(SUCCESS, NULL, -1, -1, NULL, NULL);
-    debug_packet("[ Response sent by server ]", response);
-    send_packet(response, request->response_pipe);
 }
 
 void handle_request(Packet *request) {
@@ -82,11 +85,13 @@ void server_run(char *documents_folder, int cache_size) {
     while (run) {
         // Receive request
         Packet *request = receive_packet(REQUEST_PIPE);
-        // debug_packet("[ Request received by server ]", request); // debug
 
         if (request != NULL) {
             if (request->code == SHUTDOWN_SERVER) {
                 run = 0;
+                Packet *response = create_packet(SUCCESS, REQUEST_PIPE, -1, -1, NULL, NULL);
+                send_packet(response, request->response_pipe);
+                sleep(2);
             }
             else {
                 pid_t pid = fork();
@@ -99,7 +104,6 @@ void server_run(char *documents_folder, int cache_size) {
                     perror("Fork failed\n");
                     Packet *response = create_packet(FAILURE, REQUEST_PIPE, -1, -1, NULL, NULL);
                     send_packet(response, request->response_pipe);
-                    // debug_packet("[ Response sent by server ]", response); // debug
                 }
             }
         } else {

@@ -25,6 +25,7 @@ typedef enum {
     SHUTDOWN_SERVER,     // Shutdown server
 
     SUCCESS = 100,       // Success response
+    LAST_FRAG,           // Marks the last fragment
     FAILURE              // Failure response
 } Code;
 

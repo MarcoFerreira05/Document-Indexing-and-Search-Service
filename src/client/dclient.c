@@ -55,12 +55,10 @@ int main(int argc, char **argv) {
 
     // Create response pipe and send request
     create_pipe(response_pipe);
-    // debug_packet("[ Request sent by client ]", request); // debug
     send_packet(request, REQUEST_PIPE);
 
     // Receive response and close response pipe
     Packet *response = receive_packet(response_pipe);
-    debug_packet("[ Response received by client ]", response); // debug
 
     // Process response
     switch (option)
@@ -101,10 +99,11 @@ int main(int argc, char **argv) {
 
     case 's':
         if (response->code == SUCCESS) {
-            while(response->document_id >= 0) {
+            debug_packet("->", response);
+            while(response->code != LAST_FRAG) {
                 printf("%d\n", response->document_id);
                 response = receive_packet(response_pipe);
-                debug_packet("[ Response received by client ]", response);
+                debug_packet("->", response);
             }
         } else {
             printf("Failed to search documents\n");
