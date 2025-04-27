@@ -93,7 +93,7 @@ int deleteDocument(int key){
  *
  * @return Retorna 0 em caso de sucesso ou -1 em caso de erro.
  */
-GList* AllValidKeys(){
+GArray* AllValidKeys(){
 
     return listDocuments();
 }

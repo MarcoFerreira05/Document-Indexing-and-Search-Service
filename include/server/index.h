@@ -9,7 +9,6 @@
 #include "cache.h"
 #include "command.h"
 
-
 /**
  * @file index.h
  * @brief Interface para operações de gestão de documentos no ficheiro de índice.
@@ -17,6 +16,14 @@
  * Este módulo fornece funções para adicionar, consultar, eliminar documentos
  * e obter a próxima chave disponível no ficheiro "IndexFile.txt".
  */
+
+
+/**
+ * @brief Fornce o proximo índice disponivel.
+ * @return A chave utilizada disponivel.\\
+ */
+int IndexGetKey();
+
 
 /**
  * @brief Adiciona ou atualiza um documento no ficheiro de índice.
