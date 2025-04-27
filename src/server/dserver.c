@@ -38,19 +38,31 @@ void handle_count_lines(Packet *request) {
 }
 
 void handle_search_documents(Packet *request) {
-    sleep(5);
+
+    char search_request_pipe[MAX_PIPE_SIZE];
+    snprintf(search_request_pipe, MAX_PIPE_SIZE, REQUEST_PIPE_TEMPLATE, getpid());
+    create_pipe(search_request_pipe);
+
     int n = 4;
     int document_ids[] = {00001, 00002, 00003, 00004};
+
+    sleep(5);
+
     for (int i = 0; i < n+1; i++) {
+
         Packet *response;
+
         if (i < n) {
-            response = create_packet(SUCCESS, REQUEST_PIPE, document_ids[i], -1, NULL, NULL);
+            response = create_packet(SUCCESS, search_request_pipe, document_ids[i], -1, NULL, NULL);
         } else {
-            response = create_packet(LAST_FRAG, REQUEST_PIPE, -1, -1, NULL, NULL);
+            response = create_packet(LAST_FRAG, search_request_pipe, -1, -1, NULL, NULL);
         }
         //debug_packet("->", response);
         send_packet(response, request->response_pipe);
+        receive_packet(search_request_pipe);
     }
+
+    close_pipe(search_request_pipe);
 }
 
 void handle_request(Packet *request) {

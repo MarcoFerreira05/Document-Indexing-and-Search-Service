@@ -6,10 +6,10 @@
 
 /*
 dclient -a "title" "authors" "year" "path"      ||      243123
-dclient -c 243123                               ||      "title" "authors" "year" "path"
+dclient -c 243123                               ||      biblia jesus 0034 src/...
 dclient -d 243123                               ||      Document deleted
 dclient -l 243123 "teste"                       ||      34
-dclient -s "teste"                              ||      [2321893, 1237321, 3423556]
+dclient -s "teste"                              ||      1 2 3 4
 */
 
 int main(int argc, char **argv) {
@@ -99,12 +99,16 @@ int main(int argc, char **argv) {
 
     case 's':
         if (response->code == SUCCESS) {
-            debug_packet("->", response);
+            //debug_packet("->", response);
+            Packet *acknowledge = create_packet(ACKNOWLEDGMENT, response->response_pipe,
+                                                -1, -1, NULL, NULL);
             while(response->code != LAST_FRAG) {
                 printf("%d\n", response->document_id);
+                send_packet(acknowledge, response->response_pipe);
                 response = receive_packet(response_pipe);
-                debug_packet("->", response);
+                //debug_packet("->", response);
             }
+            send_packet(acknowledge, response->response_pipe);
         } else {
             printf("Failed to search documents\n");
         }

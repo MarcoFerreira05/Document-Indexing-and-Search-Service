@@ -13,7 +13,8 @@
 
 // Pipe names
 #define REQUEST_PIPE "request_pipe"
-#define RESPONSE_PIPE_TEMPLATE "response_pipe_%d"
+#define REQUEST_PIPE_TEMPLATE "request_pipe%d"
+#define RESPONSE_PIPE_TEMPLATE "response_pipe%d"
 
 // Request types
 typedef enum {
@@ -25,6 +26,7 @@ typedef enum {
     SHUTDOWN_SERVER,     // Shutdown server
 
     SUCCESS = 100,       // Success response
+    ACKNOWLEDGMENT,       // Acknowledge a packet was recieved
     LAST_FRAG,           // Marks the last fragment
     FAILURE              // Failure response
 } Code;
