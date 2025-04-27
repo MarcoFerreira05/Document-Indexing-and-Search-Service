@@ -6,13 +6,16 @@
 
 // Maximum sizes for various fields
 #define MAX_PIPE_SIZE 256
+#define METADATA_FIELDS_COUNT 4
+#define MAX_FIELDS_SIZE 256
 
-#define REQUEST_PIPE "/tmp/request_pipe"
-#define RESPONSE_PIPE_TEMPLATE "/tmp/response_pipe_%d"
+// Pipe names
+#define REQUEST_PIPE "request_pipe"
+#define RESPONSE_PIPE_TEMPLATE "response_pipe_%d"
 
 // Request types
 typedef enum {
-    ADD_DOCUMENT = 1,    // Add a new document
+    ADD_DOCUMENT = 10,   // Add a new document
     QUERY_DOCUMENT,      // Query document metadata
     DELETE_DOCUMENT,     // Delete document metadata
     COUNT_LINES,         // Count lines containing keyword
@@ -20,16 +23,16 @@ typedef enum {
     SEARCH_PARALLEL,     // Search documents in parallel
     SHUTDOWN_SERVER,     // Shutdown server
 
-    SUCCESS,             // Success response
+    SUCCESS = 100,       // Success response
     FAILURE              // Failure response
 } Code;
 
 // Packet struct
 typedef struct {
     Code code;
-    char *response_pipe;
+    char response_pipe[MAX_PIPE_SIZE];
     int document_id;
-    char **metadata;
+    char metadata[METADATA_FIELDS_COUNT][MAX_FIELDS_SIZE];
 } Packet;
 
 // Helper functions for protocol operations
@@ -37,7 +40,7 @@ int create_pipe(char *pipe_name);
 int close_pipe(char *pipe_name);
 Packet *create_packet(Code code, char *response_pipe,
                       int document_id, char **metadata);
-int delete_packet(Packet *packet);
+void delete_packet(Packet *packet);
 int send_packet(Packet *packet, char *pipe_name);
 Packet *receive_packet(char *pipe_name);
 void debug_packet(char *title, Packet *packet); // debug
