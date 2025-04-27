@@ -13,7 +13,7 @@ dclient -s "teste"                              ||      1 2 3 4
 */
 
 int main(int argc, char **argv) {
-    if (argc < 2) {
+    if (argc < 2 || argc > 4) {
         fprintf(stderr, "Usage: %s <option> <arguments>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
@@ -97,18 +97,15 @@ int main(int argc, char **argv) {
         }
         break;
 
-    case 's':
+        case 's':
         if (response->code == SUCCESS) {
-            //debug_packet("->", response);
             Packet *acknowledge = create_packet(ACKNOWLEDGMENT, response->response_pipe,
                                                 -1, -1, NULL, NULL);
-            while(response->code != LAST_FRAG) {
+            while (response != NULL) {
                 printf("%d\n", response->document_id);
                 send_packet(acknowledge, response->response_pipe);
                 response = receive_packet(response_pipe);
-                //debug_packet("->", response);
             }
-            send_packet(acknowledge, response->response_pipe);
         } else {
             printf("Failed to search documents\n");
         }

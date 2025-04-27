@@ -48,15 +48,15 @@ void handle_search_documents(Packet *request) {
 
     sleep(5);
 
-    for (int i = 0; i < n+1; i++) {
+    for (int i = 0; i < n; i++) {
 
         Packet *response;
 
-        if (i < n) {
-            response = create_packet(SUCCESS, search_request_pipe, document_ids[i], -1, NULL, NULL);
-        } else {
-            response = create_packet(LAST_FRAG, search_request_pipe, -1, -1, NULL, NULL);
-        }
+        // if (i < n) {
+        response = create_packet(SUCCESS, search_request_pipe, document_ids[i], -1, NULL, NULL);
+        // } else {
+        //     response = create_packet(LAST_FRAG, search_request_pipe, -1, -1, NULL, NULL);
+        // }
         //debug_packet("->", response);
         send_packet(response, request->response_pipe);
         receive_packet(search_request_pipe);

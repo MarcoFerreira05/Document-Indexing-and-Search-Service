@@ -67,7 +67,18 @@ Packet *receive_packet(char *pipe_name) {
         return NULL;
     }
     Packet *packet = (Packet *)malloc(sizeof(Packet));
-    read(fd, packet, sizeof(Packet));
+    ssize_t b = read(fd, packet, sizeof(Packet));
+    printf("Bytes read: %zd\n", b);
+    if (b == 0) {
+        // Server has closed the pipe
+        free(packet);
+        packet = NULL;
+    } else if (b < 0) {
+        // Error reading from pipe
+        perror("Failed to read from pipe\n");
+        free(packet);
+        packet = NULL;
+    }
     close(fd);
     return packet;
 }
