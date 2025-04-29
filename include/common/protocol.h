@@ -4,51 +4,55 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-// Maximum sizes for various fields
-#define MAX_PIPE_SIZE 256
-#define METADATA_FIELDS_COUNT 4
-#define MAX_FIELDS_SIZE 256
-#define MAX_KEYWORD_SIZE 64
-#define OPTIONS_COUNT 6
-
-// Pipe names
+// Pipe names and max size
+#define MAX_PIPE_SIZE 64
 #define REQUEST_PIPE "request_pipe"
-#define REQUEST_PIPE_TEMPLATE "request_pipe%d"
-#define RESPONSE_PIPE_TEMPLATE "response_pipe%d"
+#define RESPONSE_PIPE_TEMPLATE "response_pipe_%d"
+
+// Maximum sizes for various fields
+#define MAX_KEYWORD_SIZE 32
+#define MAX_TITLE_SIZE 190
+#define MAX_AUTHORS_SIZE 200
+#define MAX_YEAR_SIZE 5
+#define MAX_PATH_SIZE 64
 
 // Request types
 typedef enum {
-    ADD_DOCUMENT = 0,   // Add a new document
-    QUERY_DOCUMENT,      // Query document metadata
-    DELETE_DOCUMENT,     // Delete document metadata
-    COUNT_LINES,         // Count lines containing keyword
-    SEARCH_DOCUMENTS,    // Search documents containing keyword
-    SHUTDOWN_SERVER,     // Shutdown server
+    ADD_DOCUMENT = 0,  // Add a new document
+    QUERY_DOCUMENT,    // Query document metadata
+    DELETE_DOCUMENT,   // Delete document metadata
+    COUNT_LINES,       // Count lines containing keyword
+    SEARCH_DOCUMENTS,  // Search documents containing keyword
+    SHUTDOWN_SERVER,   // Shutdown server
+    KILL_CHILD,        // Kill child process
 
-    SUCCESS = 100,       // Success response
-    ACKNOWLEDGMENT,       // Acknowledge a packet was recieved
-    LAST_FRAG,           // Marks the last fragment
-    FAILURE              // Failure response
+    SUCCESS = 100,     // Success response
+    FAILURE,           // Failure response
+    ACKNOWLEDGE,       // Acknowledge response
+    LAST_FRAG          // Marks as fragment
 } Code;
 
-// Packet struct
-typedef struct {
+typedef struct { // of size 508 bytes
     Code code;
-    char response_pipe[MAX_PIPE_SIZE];
-    int document_id;
+    pid_t src_pid;
+    int key;
     int lines;
     char keyword[MAX_KEYWORD_SIZE];
-    char metadata[METADATA_FIELDS_COUNT][MAX_FIELDS_SIZE];
+    char title[MAX_TITLE_SIZE];
+    char authors[MAX_AUTHORS_SIZE];
+    char year[MAX_YEAR_SIZE];
+    char path[MAX_PATH_SIZE];
 } Packet;
+
 
 // Helper functions for protocol operations
 int create_pipe(char *pipe_name);
 int close_pipe(char *pipe_name);
-Packet *create_packet(Code code, char *response_pipe, int document_id,
-                      int lines, char *keyword, char **metadata);
+Packet *create_packet(Code code, pid_t src_pid, int key, int lines, char *keyword,
+                      char *title, char *authors, char *year, char *path);
 void delete_packet(Packet *packet);
 int send_packet(Packet *packet, char *pipe_name);
 Packet *receive_packet(char *pipe_name);
-void debug_packet(char *title, Packet *packet); // debug
+void debug_packet(char *header, Packet *packet); // debug
 
 #endif

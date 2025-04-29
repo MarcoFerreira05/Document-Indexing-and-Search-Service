@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
+#include <stdarg.h>
 
 int create_pipe(char *pipe_name) {
     int fifo = mkfifo(pipe_name, 0666);
@@ -25,21 +26,22 @@ int close_pipe(char *pipe_name) {
     }
     return 0;
 }
-
-Packet *create_packet(Code code, char *response_pipe, int document_id,
-                      int lines, char *keyword, char **metadata) {
+ 
+Packet *create_packet(Code code, pid_t src_pid, int key, int lines, char *keyword,
+                      char *title, char *authors, char *year, char *path) {
     Packet *packet = (Packet *)malloc(sizeof(Packet));
     packet->code = code;
-    strcpy(packet->response_pipe, response_pipe);
-    packet->document_id = document_id;
+    packet->src_pid = src_pid;
+    packet->key = key;
     packet->lines = lines;
     if (keyword != NULL) {
         strcpy(packet->keyword, keyword);
     }
-    if (metadata != NULL) {
-        for (int i = 0; i < METADATA_FIELDS_COUNT; i++) {
-            strcpy(packet->metadata[i], metadata[i]);
-        }
+    if (title != NULL) {
+        strcpy(packet->title, title);
+        strcpy(packet->authors, authors);
+        strcpy(packet->year, year);
+        strcpy(packet->path, path);
     }
     return packet;
 }
@@ -68,7 +70,6 @@ Packet *receive_packet(char *pipe_name) {
     }
     Packet *packet = (Packet *)malloc(sizeof(Packet));
     ssize_t b = read(fd, packet, sizeof(Packet));
-    printf("Bytes read: %zd\n", b);
     if (b == 0) {
         // Server has closed the pipe
         free(packet);
@@ -83,16 +84,69 @@ Packet *receive_packet(char *pipe_name) {
     return packet;
 }
 
- // debug
-void debug_packet(char *title, Packet *packet) {
-    printf("%s\n", title);
+// debug
+void debug_packet(char *header, Packet *packet) {
+    printf("%s\n", header);
     printf("Code: %i\n", packet->code);
-    printf("Response pipe: %s\n", packet->response_pipe);
-    printf("Document ID: %d\n", packet->document_id);
-    printf("Lines: %d\n", packet->lines);
+    printf("Pid: %i\n", packet->src_pid);
+    printf("Key: %i\n", packet->key);
+    printf("Lines: %i\n", packet->lines);
     printf("Keyword: %s\n", packet->keyword);
-    for(int i = 0; i < METADATA_FIELDS_COUNT; i++) {
-        printf("Metadata[%d]: %s\n", i, packet->metadata[i]);
-    }
-    printf("[ ------------------------ ]\n\n");
+    printf("Title: %s\n", packet->title);
+    printf("Authors: %s\n", packet->authors);
+    printf("Year: %s\n", packet->year);
+    printf("Path: %s\n", packet->path);
+    printf("----------------------------------\n");
 }
+
+/* Packet *create_packet(Code code, pid_t src_pid, ...) {
+
+    va_list args;
+    va_start(args, src_pid);
+
+    Packet *packet = (Packet *)malloc(sizeof(Packet));
+    packet->code = code;
+    packet->src_pid = src_pid;
+
+    switch (code) {
+    case ADD_DOCUMENT:
+        strcpy(packet->title, va_arg(args, char *));
+        strcpy(packet->authors, va_arg(args, char *));
+        strcpy(packet->year, va_arg(args, char *));
+        strcpy(packet->path, va_arg(args, char *));
+        break;
+
+    case QUERY_DOCUMENT:
+        packet->key = va_arg(args, int);
+        break;
+
+    case DELETE_DOCUMENT:
+        packet->key = va_arg(args, int);
+        break;
+
+    case COUNT_LINES:
+        packet->key = va_arg(args, int);
+        strcpy(packet->keyword, va_arg(args, char *));
+        break;
+
+    case SEARCH_DOCUMENTS:
+        strcpy(packet->keyword, va_arg(args, char *));
+        break;
+
+    case SHUTDOWN_SERVER:
+    case KILL_CHILD:
+    case FAILURE:
+    case FRAG:
+        // No additional arguments needed
+        break;
+    
+    default:
+        perror("Unkown code\n");
+        free(packet);
+        va_end(args);
+        return NULL;
+    }
+
+    va_end(args);
+    return packet;
+} */

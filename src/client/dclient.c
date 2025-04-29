@@ -13,7 +13,7 @@ dclient -s "teste"                              ||      1 2 3 4
 */
 
 int main(int argc, char **argv) {
-    if (argc < 2 || argc > 4) {
+    if (argc < 2 || argc > 6) {
         fprintf(stderr, "Usage: %s <option> <arguments>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
@@ -21,31 +21,28 @@ int main(int argc, char **argv) {
     char option = argv[1][1];
     pid_t pid = getpid();
 
-    // Create response pipe
-    char response_pipe[MAX_PIPE_SIZE];
-    snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, pid);
 
     // Create request packet
     Packet *request;
     switch (option)
     {
     case 'a':
-        request = create_packet(ADD_DOCUMENT, response_pipe, -1, -1, NULL, &argv[2]);
+        request = create_packet(ADD_DOCUMENT, pid, -1, -1, NULL, argv[2], argv[3], argv[4], argv[5]);
         break;
     case 'c':
-        request = create_packet(QUERY_DOCUMENT, response_pipe, atoi(argv[2]), -1, NULL, NULL);
+        request = create_packet(QUERY_DOCUMENT, pid, atoi(argv[2]), -1, NULL, NULL, NULL, NULL, NULL);
         break;
     case 'd':
-        request = create_packet(DELETE_DOCUMENT, response_pipe, atoi(argv[2]), -1, NULL, NULL);
+        request = create_packet(DELETE_DOCUMENT, pid, atoi(argv[2]), -1,  NULL, NULL, NULL, NULL, NULL);
         break;
     case 'l':
-        request = create_packet(COUNT_LINES, response_pipe, atoi(argv[2]), -1, argv[3], NULL);
+        request = create_packet(COUNT_LINES, pid, atoi(argv[2]), -1, argv[3], NULL, NULL, NULL, NULL);
         break;
     case 's':
-        request = create_packet(SEARCH_DOCUMENTS, response_pipe, -1, -1, argv[2], NULL);
+        request = create_packet(SEARCH_DOCUMENTS, pid, -1, -1, argv[2], NULL, NULL, NULL, NULL);
         break;
     case 'f':
-        request = create_packet(SHUTDOWN_SERVER, response_pipe, -1, -1, NULL, NULL);
+        request = create_packet(SHUTDOWN_SERVER, pid, -1, -1, NULL, NULL, NULL, NULL, NULL);
         break;
     default:
         perror("Invalid option\n");
@@ -54,10 +51,12 @@ int main(int argc, char **argv) {
     }
 
     // Create response pipe and send request
+    char response_pipe[MAX_PIPE_SIZE];
+    snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, pid);
     create_pipe(response_pipe);
     send_packet(request, REQUEST_PIPE);
 
-    // Receive response and close response pipe
+    // Receive response
     Packet *response = receive_packet(response_pipe);
 
     // Process response
@@ -65,7 +64,7 @@ int main(int argc, char **argv) {
     {
     case 'a':
         if (response->code == SUCCESS) {
-            printf("%d\n", response->document_id);
+            printf("%d\n", response->key);
         } else {
             printf("Failed to add document\n");
         }
@@ -73,9 +72,7 @@ int main(int argc, char **argv) {
 
     case 'c':
         if (response->code == SUCCESS) {
-            for(int i = 0; i < METADATA_FIELDS_COUNT; i++) {
-                printf("%s\n", response->metadata[i]);
-            }
+            printf("%s %s %s %s\n", response->title, response->authors, response->year, response->path);
         } else {
             printf("Failed to find document\n");
         }
@@ -99,11 +96,13 @@ int main(int argc, char **argv) {
 
         case 's':
         if (response->code == SUCCESS) {
-            Packet *acknowledge = create_packet(ACKNOWLEDGMENT, response->response_pipe,
-                                                -1, -1, NULL, NULL);
-            while (response != NULL) {
-                printf("%d\n", response->document_id);
-                send_packet(acknowledge, response->response_pipe);
+            char acknowledge_pipe[MAX_PIPE_SIZE];
+            snprintf(acknowledge_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, response->src_pid);
+            Packet *acknowledge = create_packet(ACKNOWLEDGE, pid, -1, -1, NULL,
+                                                NULL, NULL, NULL, NULL);
+            while (response->code != LAST_FRAG) {
+                printf("%d\n", response->key);
+                send_packet(acknowledge, acknowledge_pipe);
                 response = receive_packet(response_pipe);
             }
         } else {
