@@ -1,4 +1,6 @@
 #include "protocol.h"
+#include "cache.h"
+#include "command.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,86 +8,200 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include <string.h>
 
 int run = 1;
 
-Packet *handle_add_document(Packet *request) {
-    // ...
-    Packet *response = create_packet(SUCCESS, REQUEST_PIPE, 123456, NULL);
-    return response;
+void handle_add_document(Packet *request, char *documents_folder) {
+
+    int key = AddDocument(request->title, request->authors, request->year, request->path);
+
+    char response_pipe[MAX_PIPE_SIZE];
+    snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
+    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
+
+    Packet *response = create_packet(SUCCESS, -1, key, -1, NULL,
+                                     NULL, NULL, NULL, NULL);
+    send_packet(response, response_pipe_fd);
+    delete_packet(response);
+    close_pipe(response_pipe_fd);
 }
 
-Packet *handle_query_document(Packet *request) {
-    // ...
-    return create_packet(SUCCESS, REQUEST_PIPE, 123456, NULL);
-}
+void handle_query_document(Packet *request) {
 
-Packet *handle_delete_document(Packet *request) {
-    // ...
-    return create_packet(SUCCESS, REQUEST_PIPE, 123456, NULL);
-}
+    char **metadata = consultDocument(request->key);
 
-Packet *handle_shutdown_server(Packet *request) {
-    run = 0;
-    return create_packet(SUCCESS, REQUEST_PIPE, 123456, NULL);
-}
+    char response_pipe[MAX_PIPE_SIZE];
+    snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
+    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
 
-Packet *handle_request(Packet *request) {
     Packet *response;
+    if (metadata != NULL) {
+        response = create_packet(SUCCESS, -1, -1, -1, NULL,
+                                 metadata[0], metadata[1], metadata[2], metadata[3]);
+    } else {
+        response = create_packet(FAILURE, -1, -1, -1, NULL,
+                                 NULL, NULL, NULL, NULL);
+    }
+    send_packet(response, response_pipe_fd);
+    delete_packet(response);
+    close_pipe(response_pipe_fd);
+}
+
+void handle_delete_document(Packet *request) {
+
+    Packet *response;
+    if (!deleteDocument(request->key)) {
+        response = create_packet(SUCCESS, -1, -1, -1, NULL,
+            NULL, NULL, NULL, NULL);
+    } else {
+        response = create_packet(FAILURE, -1, -1, -1, NULL,
+            NULL, NULL, NULL, NULL);
+    }
+    
+    char response_pipe[MAX_PIPE_SIZE];
+    snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
+    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
+
+    send_packet(response, response_pipe_fd);
+    delete_packet(response);
+    close_pipe(response_pipe_fd);
+}
+
+void handle_count_lines(Packet *request) {
+
+
+    int lines = 34;
+
+    char response_pipe[MAX_PIPE_SIZE];
+    snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
+    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
+
+    Packet *response = create_packet(SUCCESS, -1, -1, lines, NULL,
+                                     NULL, NULL, NULL, NULL);
+    
+    send_packet(response, response_pipe_fd);
+    delete_packet(response);
+    close_pipe(response_pipe_fd);
+}
+
+void handle_search_documents(Packet *request) {
+
+
+
+
+
+    char response_pipe[MAX_PIPE_SIZE];
+    snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
+    
+    int response_pipe_fd = open(response_pipe, O_WRONLY);
+    
+    for (int i = 1; i <= 5; i++) {
+        Packet *response = create_packet(SUCCESS, -1, i, -1, NULL,
+                                         NULL, NULL, NULL, NULL);
+        send_packet(response, response_pipe_fd);
+        delete_packet(response);
+    }
+    close_pipe(response_pipe_fd);
+}
+
+void handle_request(Packet *request, char *documents_folder) {
 
     switch (request->code) {
         case ADD_DOCUMENT:
-            response = handle_add_document(request);
+            handle_add_document(request, documents_folder);
             break;
         case QUERY_DOCUMENT:
-            response = handle_query_document(request);
+            handle_query_document(request);
             break;
         case DELETE_DOCUMENT:
-            response =handle_delete_document(request);
+            handle_delete_document(request);
+            break;
+        case COUNT_LINES:
+            handle_count_lines(request);
+            break;
+        case SEARCH_DOCUMENTS:
+            handle_search_documents(request);
             break;
         case SHUTDOWN_SERVER:
-            response = handle_shutdown_server(request);
+            run = 0;
             break;
         default:
             perror("Invalid request type\n");
-            return NULL;
     }
-    return response;
 }
+
 
 void server_run(char *documents_folder, int cache_size) {
 
-    // Create request pipeç
+    // Initialize cache
+    if (cache_size > 0) {
+        if (cacheInit(cache_size) == -1) {
+            perror("Failed to initialize cache\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Create request pipe
     create_pipe(REQUEST_PIPE);
+    // int request_pipe_aux = open_pipe(REQUEST_PIPE, O_WRONLY);
+    int request_pipe_fd = open_pipe(REQUEST_PIPE, O_RDWR);
 
     while (run) {
         // Receive request
-        Packet *request = receive_packet(REQUEST_PIPE);
-        debug_packet("[ Request received by server ]", request); // debug
-
+        Packet *request = receive_packet(request_pipe_fd);
         if (request != NULL) {
-            // Handle request
-            Packet *response = handle_request(request);
-            if (response != NULL) {
-                debug_packet("[ Response sent by server ]", response); // debug
-                send_packet(response, request->response_pipe);
+            if (request->code == TERMINATE_CHILD) {
+                waitpid(request->src_pid, NULL, 0);
             } else {
-                // Error handling
-                perror("Failed to handle request\n");
+                char response_pipe[MAX_PIPE_SIZE];
+                snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
+                int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
+                
+                if (request->code == QUERY_DOCUMENT || request->code == COUNT_LINES || request->code == SEARCH_DOCUMENTS) {
+                    pid_t pid = fork();
+                    if (pid == 0) {
+                        // Child process
+                        handle_request(request, documents_folder);
+                        int request_pipe_fd = open_pipe(REQUEST_PIPE, O_WRONLY);
+                        Packet *kill_request = create_packet(TERMINATE_CHILD, getpid(), -1, -1, NULL,
+                                                             NULL, NULL, NULL, NULL);
+                        send_packet(kill_request, request_pipe_fd);
+                        delete_packet(kill_request);
+                        close_pipe(request_pipe_fd);
+                        exit(0);
+                    } else if (pid < 0) {
+                        // Fork failed
+                        perror("Fork failed\n");
+                        Packet *response = create_packet(FAILURE, -1, -1, -1, NULL,
+                                                         NULL, NULL, NULL, NULL);
+                        send_packet(response, response_pipe_fd);
+                        delete_packet(response);
+                    }
+                } else {
+                    handle_request(request, documents_folder);
+                }
+                close_pipe(response_pipe_fd);
             }
+            delete_packet(request);
         } else {
             // Error receiving request
             perror("Failed to receive request\n");
         }
     }
 
+    while (wait(NULL) > 0);
+
     // Close request pipe
-    close_pipe(REQUEST_PIPE);
+    close_pipe(request_pipe_fd);
+    // close_pipe(request_pipe_aux);
+    delete_pipe(REQUEST_PIPE);
 }
 
 int main(int argc, char **argv) {
     // Check for correct number of arguments
-    if (argc < 2 && argc > 3) {
+    if (argc < 2 || argc > 3) {
         fprintf(stderr, "Usage: %s <documents_folder> [cache_size]\n"
                         "Note: <required> | [optional>\n", argv[0]);
         exit(EXIT_FAILURE);
