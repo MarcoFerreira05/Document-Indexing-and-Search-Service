@@ -24,7 +24,7 @@ typedef enum {
     COUNT_LINES,       // Count lines containing keyword
     SEARCH_DOCUMENTS,  // Search documents containing keyword
     SHUTDOWN_SERVER,   // Shutdown server
-    KILL_CHILD,        // Kill child process
+    TERMINATE_CHILD,   // Terminates the child process
 
     SUCCESS = 100,     // Success response
     FAILURE,           // Failure response
@@ -32,7 +32,8 @@ typedef enum {
     LAST_FRAG          // Marks as fragment
 } Code;
 
-typedef struct { // of size 508 bytes
+// Packet structure
+typedef struct {
     Code code;
     pid_t src_pid;
     int key;
@@ -44,15 +45,16 @@ typedef struct { // of size 508 bytes
     char path[MAX_PATH_SIZE];
 } Packet;
 
-
 // Helper functions for protocol operations
 int create_pipe(char *pipe_name);
-int close_pipe(char *pipe_name);
+int delete_pipe(char *pipe_name);
+int open_pipe(char *pipe_name, int flags);
+int close_pipe(int pipe_fd);
 Packet *create_packet(Code code, pid_t src_pid, int key, int lines, char *keyword,
                       char *title, char *authors, char *year, char *path);
 void delete_packet(Packet *packet);
-int send_packet(Packet *packet, char *pipe_name);
-Packet *receive_packet(char *pipe_name);
+int send_packet(Packet *packet, int pipe_fd);
+Packet *receive_packet(int pipe_fd);
 void debug_packet(char *header, Packet *packet); // debug
 
 #endif

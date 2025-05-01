@@ -12,67 +12,62 @@ int run = 1;
 void handle_add_document(Packet *request) {
     char response_pipe[MAX_PIPE_SIZE];
     snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
+    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
     int key = 3223423;
     Packet *response = create_packet(SUCCESS, -1, key, -1, NULL,
                                      NULL, NULL, NULL, NULL);
-    send_packet(response, response_pipe);
+    send_packet(response, response_pipe_fd);
+    delete_packet(response);
+    close_pipe(response_pipe_fd);
 }
 
 void handle_query_document(Packet *request) {
     char response_pipe[MAX_PIPE_SIZE];
     snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
+    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
     Packet *response = create_packet(SUCCESS, -1, -1, -1, NULL,
                                      "Biblia", "Apostolos", "0034", "src/biblia.txt");
-    send_packet(response, response_pipe);
+    send_packet(response, response_pipe_fd);
+    delete_packet(response);
+    close_pipe(response_pipe_fd);
 }
 
 void handle_delete_document(Packet *request) {
     char response_pipe[MAX_PIPE_SIZE];
     snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
+    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
     Packet *response = create_packet(SUCCESS, -1, -1, -1, NULL,
                                      NULL, NULL, NULL, NULL);
-    send_packet(response, response_pipe);
+    send_packet(response, response_pipe_fd);
+    delete_packet(response);
+    close_pipe(response_pipe_fd);
 }
 
 void handle_count_lines(Packet *request) {
     char response_pipe[MAX_PIPE_SIZE];
     snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
+    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
     int lines = 34;
     Packet *response = create_packet(SUCCESS, -1, -1, lines, NULL,
                                      NULL, NULL, NULL, NULL);
-    send_packet(response, response_pipe);
+    send_packet(response, response_pipe_fd);
+    delete_packet(response);
+    close_pipe(response_pipe_fd);
 }
 
 void handle_search_documents(Packet *request) {
     char response_pipe[MAX_PIPE_SIZE];
     snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
-
-    char acknowledge_pipe[MAX_PIPE_SIZE];
-    snprintf(acknowledge_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, getpid());
-    create_pipe(acknowledge_pipe);
-
-    int n = 4;
-    int keys[] = {00001, 00002, 00003, 00004};
-
-    sleep(2);
-
-    for (int i = 0; i < n+1; i++) {
-
-        Packet *response;
-
-        if (i < n) {
-            response = create_packet(SUCCESS, getpid(), keys[i], -1, NULL,
-                                     NULL, NULL, NULL, NULL);
-        } else {
-            response = create_packet(LAST_FRAG, getpid(), -1, -1, NULL,
-                                     NULL, NULL, NULL, NULL);
-        }
-        send_packet(response, response_pipe);
-        if (i < n) {
-            receive_packet(acknowledge_pipe);
-        }
+    
+    int response_pipe_fd = open(response_pipe, O_WRONLY); // Open ONCE
+    
+    for (int i = 1; i <= 5; i++) {
+        Packet *response = create_packet(SUCCESS, -1, i, -1, NULL,
+                                         NULL, NULL, NULL, NULL);
+        send_packet(response, response_pipe_fd);
+        delete_packet(response);
     }
-    close_pipe(acknowledge_pipe);
+    close_pipe(response_pipe_fd);
 }
 
 void handle_request(Packet *request) {
@@ -97,11 +92,12 @@ void handle_request(Packet *request) {
             perror("Invalid request type\n");
     }
 
-    Packet *kill_request = create_packet(KILL_CHILD, getpid(), -1, -1, NULL,
-                                    NULL, NULL, NULL, NULL);
-    send_packet(kill_request, REQUEST_PIPE);
-
-    exit(0);
+    int request_pipe_fd = open_pipe(REQUEST_PIPE, O_WRONLY);
+    Packet *kill_request = create_packet(TERMINATE_CHILD, getpid(), -1, -1, NULL,
+                                         NULL, NULL, NULL, NULL);
+    send_packet(kill_request, request_pipe_fd);
+    delete_packet(kill_request);
+    close_pipe(request_pipe_fd);
 }
 
 
@@ -109,48 +105,53 @@ void server_run(char *documents_folder, int cache_size) {
 
     // Create request pipe
     create_pipe(REQUEST_PIPE);
+    int request_pipe_fd = open_pipe(REQUEST_PIPE, O_RDWR);
 
     while (run) {
         // Receive request
-        Packet *request = receive_packet(REQUEST_PIPE);
-
+        Packet *request = receive_packet(request_pipe_fd);
         if (request != NULL) {
-            char response_pipe[MAX_PIPE_SIZE];
-            snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
-
-            if (request->code == SHUTDOWN_SERVER) {
-                run = 0;
-                Packet *response = create_packet(SUCCESS, -1, -1, -1, NULL,
-                                                 NULL, NULL, NULL, NULL);
-                send_packet(response, response_pipe);
-            } else if (request->code == KILL_CHILD) {
+            if (request->code == TERMINATE_CHILD) {
                 waitpid(request->src_pid, NULL, 0);
             } else {
-                pid_t pid = fork();
-                if (pid == 0) {
-                    // Child process
-                    handle_request(request);
-                    exit(0);
-                } else if (pid < 0) {
-                    // Fork failed
-                    perror("Fork failed\n");
-                    Packet *response = create_packet(FAILURE, -1, -1, -1, NULL,
+                char response_pipe[MAX_PIPE_SIZE];
+                snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
+                int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
+                
+                if (request->code == SHUTDOWN_SERVER) {
+                    run = 0;
+                    Packet *response = create_packet(SUCCESS, -1, -1, -1, NULL,
                                                      NULL, NULL, NULL, NULL);
-                    send_packet(response, response_pipe);
+                    send_packet(response, response_pipe_fd);
+                } else {
+                    pid_t pid = fork();
+                    if (pid == 0) {
+                        // Child process
+                        handle_request(request);
+                        exit(0);
+                    } else if (pid < 0) {
+                        // Fork failed
+                        perror("Fork failed\n");
+                        Packet *response = create_packet(FAILURE, -1, -1, -1, NULL,
+                                                         NULL, NULL, NULL, NULL);
+                        send_packet(response, response_pipe_fd);
+                        delete_packet(response);
+                    }
                 }
+                close_pipe(response_pipe_fd);
             }
-
-            delete_packet(request);
         } else {
             // Error receiving request
             perror("Failed to receive request\n");
         }
+        delete_packet(request);
     }
 
     while (wait(NULL) > 0);
-    
+
     // Close request pipe
-    close_pipe(REQUEST_PIPE);
+    close_pipe(request_pipe_fd);
+    delete_pipe(REQUEST_PIPE);
 }
 
 int main(int argc, char **argv) {

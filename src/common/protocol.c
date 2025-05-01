@@ -18,10 +18,28 @@ int create_pipe(char *pipe_name) {
     return 0;
 }
 
-int close_pipe(char *pipe_name) {
+int delete_pipe(char *pipe_name) {
     int result = unlink(pipe_name);
     if (result < 0) {
-        perror("Failed to close pipe\n");
+        perror("Failed to delete pipe\n");
+        return -1;
+    }
+    return 0;
+}
+
+int open_pipe(char *pipe_name, int flags) {
+    int fd = open(pipe_name, flags);
+    if (fd < 0) {
+        perror("Failed to open pipe fd\n");
+        return -1;
+    }
+    return fd;
+}
+
+int close_pipe(int pipe_fd) {
+    int result = close(pipe_fd);
+    if (result < 0) {
+        perror("Failed to close pipe fd\n");
         return -1;
     }
     return 0;
@@ -47,45 +65,33 @@ Packet *create_packet(Code code, pid_t src_pid, int key, int lines, char *keywor
 }
 
 void delete_packet(Packet *packet) {
-    free(packet);
+    if (packet != NULL) free(packet);
 }
 
-int send_packet(Packet *packet, char *pipe_name) {
-    int fd = open(pipe_name, O_WRONLY);
-    if (fd < 0) {
-        perror("Failed to open pipe\n");
-        return -1;
-    }
-    write(fd, packet, sizeof(Packet));
-    close(fd);
-    free(packet);
+int send_packet(Packet *packet, int pipe_fd) {
+    write(pipe_fd, packet, sizeof(Packet));
     return 0;
 }
 
-Packet *receive_packet(char *pipe_name) {
-    int fd = open(pipe_name, O_RDONLY);
-    if (fd < 0) {
-        perror("Failed to open pipe\n");
-        return NULL;
-    }
+Packet *receive_packet(int pipe_fd) {
     Packet *packet = (Packet *)malloc(sizeof(Packet));
-    ssize_t b = read(fd, packet, sizeof(Packet));
-    if (b == 0) {
-        // Server has closed the pipe
+    ssize_t s = read(pipe_fd, packet, sizeof(Packet));
+
+    if (s == 0) {
         free(packet);
         packet = NULL;
-    } else if (b < 0) {
-        // Error reading from pipe
-        perror("Failed to read from pipe\n");
+    } else if (s < 0) {
+        perror("Read less than 0 bytes\n");
         free(packet);
         packet = NULL;
     }
-    close(fd);
+
     return packet;
 }
 
 // debug
 void debug_packet(char *header, Packet *packet) {
+    printf("/-------------\\\n");
     printf("%s\n", header);
     printf("Code: %i\n", packet->code);
     printf("Pid: %i\n", packet->src_pid);
@@ -96,7 +102,7 @@ void debug_packet(char *header, Packet *packet) {
     printf("Authors: %s\n", packet->authors);
     printf("Year: %s\n", packet->year);
     printf("Path: %s\n", packet->path);
-    printf("----------------------------------\n");
+    printf("\\-------------/\n");
 }
 
 /* Packet *create_packet(Code code, pid_t src_pid, ...) {

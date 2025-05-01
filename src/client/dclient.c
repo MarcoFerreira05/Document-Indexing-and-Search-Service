@@ -3,13 +3,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 /*
+EXAMPLE USAGE:
 dclient -a "title" "authors" "year" "path"      ||      243123
 dclient -c 243123                               ||      biblia jesus 0034 src/...
 dclient -d 243123                               ||      Document deleted
 dclient -l 243123 "teste"                       ||      34
-dclient -s "teste"                              ||      1 2 3 4
+dclient -s "teste"                              ||      1 2 3 4 5
 */
 
 int main(int argc, char **argv) {
@@ -50,14 +52,20 @@ int main(int argc, char **argv) {
         break;
     }
 
-    // Create response pipe and send request
+    // Create response pipe
     char response_pipe[MAX_PIPE_SIZE];
     snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, pid);
     create_pipe(response_pipe);
-    send_packet(request, REQUEST_PIPE);
+
+    // Send request
+    int request_pipe_fd = open_pipe(REQUEST_PIPE, O_WRONLY);
+    send_packet(request, request_pipe_fd);
+    delete_packet(request);
+    close_pipe(request_pipe_fd);
 
     // Receive response
-    Packet *response = receive_packet(response_pipe);
+    int response_pipe_fd = open_pipe(response_pipe, O_RDONLY);
+    Packet *response = receive_packet(response_pipe_fd);
 
     // Process response
     switch (option)
@@ -94,17 +102,13 @@ int main(int argc, char **argv) {
         }
         break;
 
-        case 's':
+    case 's':
         if (response->code == SUCCESS) {
-            char acknowledge_pipe[MAX_PIPE_SIZE];
-            snprintf(acknowledge_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, response->src_pid);
-            Packet *acknowledge = create_packet(ACKNOWLEDGE, pid, -1, -1, NULL,
-                                                NULL, NULL, NULL, NULL);
-            while (response->code != LAST_FRAG) {
+            do {
                 printf("%d\n", response->key);
-                send_packet(acknowledge, acknowledge_pipe);
-                response = receive_packet(response_pipe);
-            }
+                delete_packet(response);
+                response = receive_packet(response_pipe_fd);
+            } while (response != NULL);
         } else {
             printf("Failed to search documents\n");
         }
@@ -124,8 +128,10 @@ int main(int argc, char **argv) {
         break;
     }
 
-    // Delete response packet
-    close_pipe(response_pipe);
+    // Clean up
+    delete_packet(response);
+    close_pipe(response_pipe_fd);
+    delete_pipe(response_pipe);
 
     return 0;
 }
