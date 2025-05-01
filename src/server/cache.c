@@ -3,7 +3,7 @@
 #include <index.h>
 
 
-/*DEBUG*/
+/*DEBUG
 
 void print_entry(gpointer key, gpointer value, gpointer user_data){
     IndexPack data  = (IndexPack) value;
@@ -23,7 +23,7 @@ void print_hash_table(GHashTable *table) {
     g_hash_table_foreach(table, print_entry, NULL);
 }
 
-/*--------------------------------*/
+--------------------------------*/
 
 
 int Cache_size = 10;
@@ -40,7 +40,7 @@ typedef struct cachepage{
 // Poderá ser char ao inves de int para poupar memoria 
 // Poderá ser usada uma GSList simpel ao invés da GList
 
-//DEBUG
+/*
 void print_glist_cachepages(GList *list) {
     for (GList *l = list; l != NULL; l = l->next) {
         CachePage page = (CachePage) l->data;
@@ -49,7 +49,7 @@ void print_glist_cachepages(GList *list) {
     printf("NULL\n");
 }
 //_____
-
+*/
 //remove o LRU element from cache
 int cacheRemove(){
 
@@ -63,14 +63,14 @@ int cacheRemove(){
 
         print_hash_table(Cache);
 
-        printf("Visiting key %d\n", *(int*)emCheck->data);
+        //printf("Visiting key %d\n", *(int*)emCheck->data);
         CachePage cachePage = (CachePage)emCheck->data;
         if(cachePage->ref == 1){
             cachePage->ref = 0;
         }
         else
         {
-            printf("Saving key %d on disk\n", cachePage->key);
+            //printf("Saving key %d on disk\n", cachePage->key);
             if(cachePage->dirty == 1){
                 IndexPack pack = g_hash_table_lookup(Cache, &cachePage->key);
                 if(pack != NULL){
@@ -82,13 +82,13 @@ int cacheRemove(){
                 cachePage->dirty = 0;
             }
             
-            printf("Removing key %d from cache\n", cachePage->key);
+            //printf("Removing key %d from cache\n", cachePage->key);
             IndexPack pack = g_hash_table_lookup(Cache, &cachePage->key);
             if(pack != NULL){
                 g_hash_table_remove(Cache, &cachePage->key);
                 OnCache = g_list_delete_link(OnCache, emCheck);
             }
-            printf("Cache after removing key\n");
+            //printf("Cache after removing key\n");
             print_glist_cachepages(g_list_first(OnCache));
             break;
         }
@@ -141,7 +141,7 @@ int cacheAdd(void *value) {
     int key = AddOffset;    
     AddOffset ++; 
 
-    printf("\n\n\n-Request to add value to cache with key %d\n",key);
+    //printf("\n\n\n-Request to add value to cache with key %d\n",key);
     CachePage page = malloc(sizeof(struct cachepage));
     if(page == NULL){
         perror("Failed to allocate memory for cache page\n");
@@ -154,14 +154,14 @@ int cacheAdd(void *value) {
 
     if(g_list_length(OnCache) >= Cache_size){
         //Se a cache estiver cheia, remover o LRU element
-        printf("Cache is full, removing LRU element\n");
+        //printf("Cache is full, removing LRU element\n");
         if(cacheRemove() == -1){
             perror("Failed to remove LRU element from cache\n");
             return -1;
         }
     }
     
-    printf("\nAdded key %d to cache\n", key);
+    //printf("\nAdded key %d to cache\n", key);
     int *key_ptr = malloc(sizeof(int));
     *key_ptr = key;
     g_hash_table_insert(Cache, key_ptr, value);
