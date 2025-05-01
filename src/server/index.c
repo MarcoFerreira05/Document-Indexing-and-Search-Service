@@ -28,7 +28,7 @@ int IndexGetKey(){
     }
 
     close(IndexFile);
-    return offset / sizeof(IndexPack); // Retorna a chave do próximo documento
+    return offset / sizeof(struct indexPackage); // Retorna a chave do próximo documento
 }
 
 
@@ -36,7 +36,7 @@ int IndexGetKey(){
 int IndexAddManager(IndexPack argument,int key){
 
     //Verificar se o arquivo Index existe 
-    int IndexFile = open("IndexFile.txt", O_RDONLY | O_CREAT, 0600); 
+    int IndexFile = open("IndexFile.txt", O_WRONLY | O_CREAT, 0600); 
     
     if(IndexFile == -1){
         //Erro ao abrir o arquivo
@@ -45,7 +45,7 @@ int IndexAddManager(IndexPack argument,int key){
     }
     
     // -- Calcular Offset do documento -- //
-    off_t offset = key * sizeof(IndexPack);
+    off_t offset = key * sizeof(struct indexPackage);
     off_t offsetSeek = lseek(IndexFile, offset, SEEK_SET);
     if (offsetSeek == -1) {
         perror("Erro ao obter o offset do documento");
@@ -54,7 +54,7 @@ int IndexAddManager(IndexPack argument,int key){
     }
 
 
-    size_t bytesWritten = write(IndexFile,argument, sizeof(IndexPack));
+    size_t bytesWritten = write(IndexFile, argument, sizeof(struct indexPackage));
 
     if(bytesWritten == -1){
         //Erro ao escrever no arquivo
@@ -70,7 +70,7 @@ int IndexAddManager(IndexPack argument,int key){
 
 
 
-void* IndexConsultManager(int key){
+IndexPack IndexConsultManager(int key){
     
     //Verificar se o arquivo Index existe
     int IndexFile = open("IndexFile.txt", O_RDONLY , 0600);
@@ -81,7 +81,7 @@ void* IndexConsultManager(int key){
     }
 
     // -- Calcular Offset do documento -- //
-    off_t offset = key * sizeof(IndexPack);
+    off_t offset = key * sizeof(struct indexPackage);
     off_t offsetSeek = lseek(IndexFile, offset, SEEK_SET);
     if (offsetSeek == -1) {
         perror("Erro ao obter o offset do documento");
@@ -89,8 +89,8 @@ void* IndexConsultManager(int key){
         return NULL;
     }
 
-    void* pack = malloc(sizeof(IndexPack));
-    ssize_t bytesRead = read(IndexFile, &pack, sizeof(IndexPack));
+    void* pack = malloc(sizeof(struct indexPackage));
+    ssize_t bytesRead = read(IndexFile, pack, sizeof(struct indexPackage));
     if(bytesRead == -1){
         //Erro ao ler o arquivo
         perror("Erro ao ler o arquivo de índice");
@@ -99,11 +99,11 @@ void* IndexConsultManager(int key){
         return NULL;
     }
 
-    return pack;
+    return (IndexPack) pack;
 }
 
 
-int IndexDeleteManager(int key,IndexPack *BlankPackage){
+int IndexDeleteManager(int key,IndexPack BlankPackage){
 
     //Verificar se o arquivo Index existe
     int IndexFile = open("IndexFile.txt", O_WRONLY, 0600);
@@ -114,7 +114,7 @@ int IndexDeleteManager(int key,IndexPack *BlankPackage){
     }
 
     // -- Calcular Offset do documento -- //
-    off_t offset = key * sizeof(IndexPack);
+    off_t offset = key * sizeof(struct indexPackage);
     off_t offsetSeek = lseek(IndexFile, offset, SEEK_SET);
     if (offsetSeek == -1) {
         perror("Erro ao obter o offset do documento");
@@ -123,7 +123,7 @@ int IndexDeleteManager(int key,IndexPack *BlankPackage){
     }
 
     //Remover o documento
-    write(IndexFile, *BlankPackage, sizeof(IndexPack));
+    write(IndexFile, BlankPackage, sizeof(struct indexPackage));
     close(IndexFile);
 
     return 0;

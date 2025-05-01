@@ -1,13 +1,13 @@
 #ifndef INDEX_H
 #define INDEX_H
 
+#include "command.h"
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
-#include "cache.h"
-#include "command.h"
+
 
 /**
  * @file index.h
@@ -42,9 +42,9 @@ int IndexAddManager(IndexPack argument, int key);
  * Lê e devolve uma estrutura `IndexPack` associada à chave fornecida.
  * 
  * @param key Chave do documento a consultar.
- * @return Ponteiro para o `IndexPack` lido, ou NULL em caso de erro.
+ * @return Ponteiro `IndexPack` lido, ou NULL em caso de erro.
  */
-void* IndexConsultManager(int key);
+IndexPack IndexConsultManager(int key);
 
 /**
  * @brief Elimina logicamente um documento do ficheiro de índice.
@@ -55,6 +55,6 @@ void* IndexConsultManager(int key);
  * @param BlankPackage Pacote a ser escrito no lugar do documento (normalmente com `deleted = 1`).
  * @return 0 em caso de sucesso ou -1 em caso de erro.
  */
-int IndexDeleteManager(int key, IndexPack *BlankPackage);
+int IndexDeleteManager(int key, IndexPack BlankPackage);
 
 #endif // INDEX_H

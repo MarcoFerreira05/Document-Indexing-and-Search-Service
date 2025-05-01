@@ -13,8 +13,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
-#include "cache.h"
-
 
  /**
  * @brief Estrutura que representa um pacote de indexação de documentos.
@@ -26,7 +24,7 @@ typedef struct indexPackage{
     int deleted;
     char Title[200];
     char authors[200];
-    char year[4];
+    char year[5];
     char path[64];
 
 }*IndexPack;

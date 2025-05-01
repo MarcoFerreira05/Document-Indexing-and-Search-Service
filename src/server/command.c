@@ -22,10 +22,10 @@ int AddDocument(char **ToIndex){
     //Criação do pacote a ser indexado
     IndexPack PackToIndex = g_malloc(sizeof(struct indexPackage));
     PackToIndex->deleted = 0;
-    strcpy(PackToIndex->Title,ToIndex[1]);
-    strcpy(PackToIndex->authors,ToIndex[2]);
-    strcpy(PackToIndex->year,ToIndex[3]);
-    strcpy(PackToIndex->path,ToIndex[4]);
+    strcpy(PackToIndex->Title,ToIndex[0]);
+    strcpy(PackToIndex->authors,ToIndex[1]);
+    strcpy(PackToIndex->year,ToIndex[2]);
+    strcpy(PackToIndex->path,ToIndex[3]);
     
     //Enviar pacote para indexação e retorna a key (ou -1 em caso de erro)
     int Key = cacheAdd(PackToIndex);
