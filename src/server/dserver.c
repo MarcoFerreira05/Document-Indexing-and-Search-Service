@@ -1,6 +1,7 @@
 #include "protocol.h"
 #include "cache.h"
 #include "command.h"
+#include "search.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,7 +23,7 @@ void handle_add_document(Packet *request, char *documents_folder) {
     int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
 
     Packet *response = create_packet(SUCCESS, -1, key, -1, NULL,
-                                     NULL, NULL, NULL, NULL);
+                                     NULL, NULL, NULL, NULL, -1);
     send_packet(response, response_pipe_fd);
     delete_packet(response);
     close_pipe(response_pipe_fd);
@@ -39,10 +40,10 @@ void handle_query_document(Packet *request) {
     Packet *response;
     if (metadata != NULL) {
         response = create_packet(SUCCESS, -1, -1, -1, NULL,
-                                 metadata[0], metadata[1], metadata[2], metadata[3]);
+                                 metadata[0], metadata[1], metadata[2], metadata[3], -1);
     } else {
         response = create_packet(FAILURE, -1, -1, -1, NULL,
-                                 NULL, NULL, NULL, NULL);
+                                 NULL, NULL, NULL, NULL, -1);
     }
     send_packet(response, response_pipe_fd);
     delete_packet(response);
@@ -54,10 +55,10 @@ void handle_delete_document(Packet *request) {
     Packet *response;
     if (!deleteDocument(request->key)) {
         response = create_packet(SUCCESS, -1, -1, -1, NULL,
-            NULL, NULL, NULL, NULL);
+            NULL, NULL, NULL, NULL, -1);
     } else {
         response = create_packet(FAILURE, -1, -1, -1, NULL,
-            NULL, NULL, NULL, NULL);
+            NULL, NULL, NULL, NULL, -1);
     }
     
     char response_pipe[MAX_PIPE_SIZE];
@@ -69,41 +70,47 @@ void handle_delete_document(Packet *request) {
     close_pipe(response_pipe_fd);
 }
 
-void handle_count_lines(Packet *request) {
+void handle_count_lines(Packet *request, char *folder_path) {
 
-
-    int lines = 34;
+    int lines = search_keyword_in_file(request->key, request->keyword, 0, folder_path);
 
     char response_pipe[MAX_PIPE_SIZE];
     snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
     int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
 
     Packet *response = create_packet(SUCCESS, -1, -1, lines, NULL,
-                                     NULL, NULL, NULL, NULL);
+                                     NULL, NULL, NULL, NULL, -1);
     
     send_packet(response, response_pipe_fd);
     delete_packet(response);
     close_pipe(response_pipe_fd);
 }
 
-void handle_search_documents(Packet *request) {
+void handle_search_documents(Packet *request, char *folder_path) {
 
+    GArray *docs_with_kw = NULL;
 
-
-
+    if(request->n_procs <= 1) {
+        docs_with_kw = docs_with_keyword(request->keyword, folder_path);
+    }
+    else {
+        docs_with_kw = docs_with_keyword_concurrent(request->keyword, request->n_procs, folder_path);
+    }
 
     char response_pipe[MAX_PIPE_SIZE];
     snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
     
     int response_pipe_fd = open(response_pipe, O_WRONLY);
     
-    for (int i = 1; i <= 5; i++) {
-        Packet *response = create_packet(SUCCESS, -1, i, -1, NULL,
-                                         NULL, NULL, NULL, NULL);
+    for (int i = 1; i <= docs_with_kw->len; i++) {
+        Packet *response = create_packet(SUCCESS, -1, g_array_index(docs_with_kw, int, i), -1, NULL,
+                                         NULL, NULL, NULL, NULL, -1);
         send_packet(response, response_pipe_fd);
         delete_packet(response);
     }
     close_pipe(response_pipe_fd);
+
+    g_array_free(docs_with_kw, FALSE);
 }
 
 void handle_request(Packet *request, char *documents_folder) {
@@ -119,10 +126,10 @@ void handle_request(Packet *request, char *documents_folder) {
             handle_delete_document(request);
             break;
         case COUNT_LINES:
-            handle_count_lines(request);
+            handle_count_lines(request, documents_folder);
             break;
         case SEARCH_DOCUMENTS:
-            handle_search_documents(request);
+            handle_search_documents(request, documents_folder);
             break;
         case SHUTDOWN_SERVER:
             run = 0;
@@ -166,7 +173,7 @@ void server_run(char *documents_folder, int cache_size) {
                         handle_request(request, documents_folder);
                         int request_pipe_fd = open_pipe(REQUEST_PIPE, O_WRONLY);
                         Packet *kill_request = create_packet(TERMINATE_CHILD, getpid(), -1, -1, NULL,
-                                                             NULL, NULL, NULL, NULL);
+                                                             NULL, NULL, NULL, NULL, -1);
                         send_packet(kill_request, request_pipe_fd);
                         delete_packet(kill_request);
                         close_pipe(request_pipe_fd);
@@ -175,7 +182,7 @@ void server_run(char *documents_folder, int cache_size) {
                         // Fork failed
                         perror("Fork failed\n");
                         Packet *response = create_packet(FAILURE, -1, -1, -1, NULL,
-                                                         NULL, NULL, NULL, NULL);
+                                                         NULL, NULL, NULL, NULL, -1);
                         send_packet(response, response_pipe_fd);
                         delete_packet(response);
                     }
@@ -193,9 +200,12 @@ void server_run(char *documents_folder, int cache_size) {
 
     while (wait(NULL) > 0);
 
+    if(cacheDestroy() == -1) {
+        printf("A destruição da cache correu mal");
+    }
+
     // Close request pipe
     close_pipe(request_pipe_fd);
-    // close_pipe(request_pipe_aux);
     delete_pipe(REQUEST_PIPE);
 }
 

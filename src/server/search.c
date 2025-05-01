@@ -1,4 +1,5 @@
 #include "search.h"
+#include "command.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/wait.h>
@@ -9,21 +10,20 @@
 
 
 // apenas para teste
-char* get_path(int key) {
+/*char* get_path(int key) {
     char *path = malloc(sizeof(char) * 12);
 
     snprintf(path, 22, "dataset/%d.txt", key);
 
     return path;
-}
+}*/
 
 
-int search_keyword_in_file(int key, char *keyword, int one_ocurrence) {
-    /* interação com a estrutura central
-    get_packet(key)???
-    */
+int search_keyword_in_file(int key, char *keyword, int one_ocurrence, char *folder_path) {
+    char **metainfo = consultDocument(key);
 
-    char *file_path = get_path(key);
+    char file_path[64];
+    snprintf(file_path, 64, "%s/%s", folder_path, metainfo[3]);
 
     int fildes[2];
     if(pipe(fildes) == -1) {
@@ -77,28 +77,37 @@ int search_keyword_in_file(int key, char *keyword, int one_ocurrence) {
     line_count[bytes_read-1] = '\0';
 
     close(fildes[0]);
-    free(file_path);
+    free(metainfo[0]);
+    free(metainfo[1]);
+    free(metainfo[2]);
+    free(metainfo[3]);
+    free(metainfo);
 
     return atoi(line_count);
 }
 
 
 
-GArray* docs_with_keyword(GArray *keys, char *keyword) {
+GArray* docs_with_keyword(char *keyword, char *folder_path) {
+    GArray *keys = AllValidKeys();
     GArray *docs_with_keyword = g_array_new(FALSE, TRUE, sizeof(int));
 
     int i, key;
     for(i = 0; i < keys->len; i++) {
         key = g_array_index(keys, int, i);
-        if(search_keyword_in_file(key, keyword, 1) > 0) g_array_append_val(docs_with_keyword, key);
+        if(search_keyword_in_file(key, keyword, 1, folder_path) > 0) g_array_append_val(docs_with_keyword, key);
     }
+
+    g_array_free(keys, FALSE);
 
     return docs_with_keyword;
 }
 
 
 
-GArray* docs_with_keyword_concurrent(GArray *keys, char *keyword, int number_procs) {
+GArray* docs_with_keyword_concurrent(char *keyword, int number_procs, char *folder_path) {
+    GArray *keys = AllValidKeys();
+
     // pipe para enviar as chaves aos filhos
     int i, keys_pipe[2];
 
@@ -132,7 +141,7 @@ GArray* docs_with_keyword_concurrent(GArray *keys, char *keyword, int number_pro
             ssize_t br;
             int key;
             while((br = read(keys_pipe[0], &key, sizeof(int))) != 0) {
-                if(search_keyword_in_file(key, keyword, 1) > 0) {
+                if(search_keyword_in_file(key, keyword, 1, folder_path) > 0) {
                     if(write(found_pipe[1], &key, sizeof(int)) == -1) {
                         perror("write");
                         close(keys_pipe[0]);
@@ -185,6 +194,8 @@ GArray* docs_with_keyword_concurrent(GArray *keys, char *keyword, int number_pro
             printf("exit status %d\n", WEXITSTATUS(child_status));
         }
     }
+
+    g_array_free(keys, FALSE);
 
     return docs_with_keyword;
 }

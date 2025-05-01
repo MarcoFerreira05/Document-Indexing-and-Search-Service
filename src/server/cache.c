@@ -256,10 +256,7 @@ int cacheDelete(int key) {
 int cacheDestroy() {
 
     if(Cache == NULL){
-        if(cacheInit(Cache_size) == -1){
-            perror("Cache not initialized\n");
-            return -1;
-        }
+        return 0;
     }
 
     //Iterar sobre a lista de páginas escrever em disco os elementos "dirty" da cache e liberar a memória

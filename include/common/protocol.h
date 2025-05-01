@@ -10,10 +10,9 @@
 #define RESPONSE_PIPE_TEMPLATE "response_pipe_%d"
 
 // Maximum sizes for various fields
-#define MAX_METADATA_SIZE 200
 #define MAX_KEYWORD_SIZE 32
 #define MAX_TITLE_SIZE 190
-#define MAX_AUTHORS_SIZE 200
+#define MAX_AUTHORS_SIZE 190
 #define MAX_YEAR_SIZE 5
 #define MAX_PATH_SIZE 64
 
@@ -28,9 +27,7 @@ typedef enum {
     TERMINATE_CHILD,   // Terminates the child process
 
     SUCCESS = 100,     // Success response
-    FAILURE,           // Failure response
-    ACKNOWLEDGE,       // Acknowledge response
-    LAST_FRAG          // Marks as fragment
+    FAILURE            // Failure response
 } Code;
 
 // Packet structure
@@ -44,6 +41,7 @@ typedef struct {
     char authors[MAX_AUTHORS_SIZE];
     char year[MAX_YEAR_SIZE];
     char path[MAX_PATH_SIZE];
+    int n_procs;
 } Packet;
 
 // Helper functions for protocol operations
@@ -52,7 +50,7 @@ int delete_pipe(char *pipe_name);
 int open_pipe(char *pipe_name, int flags);
 int close_pipe(int pipe_fd);
 Packet *create_packet(Code code, pid_t src_pid, int key, int lines, char *keyword,
-                      char *title, char *authors, char *year, char *path);
+                      char *title, char *authors, char *year, char *path, int n_procs);
 int delete_packet(Packet *packet);
 int send_packet(Packet *packet, int pipe_fd);
 Packet *receive_packet(int pipe_fd);

@@ -29,22 +29,22 @@ int main(int argc, char **argv) {
     switch (option)
     {
     case 'a':
-        request = create_packet(ADD_DOCUMENT, pid, -1, -1, NULL, argv[2], argv[3], argv[4], argv[5]);
+        request = create_packet(ADD_DOCUMENT, pid, -1, -1, NULL, argv[2], argv[3], argv[4], argv[5], -1);
         break;
     case 'c':
-        request = create_packet(QUERY_DOCUMENT, pid, atoi(argv[2]), -1, NULL, NULL, NULL, NULL, NULL);
+        request = create_packet(QUERY_DOCUMENT, pid, atoi(argv[2]), -1, NULL, NULL, NULL, NULL, NULL, -1);
         break;
     case 'd':
-        request = create_packet(DELETE_DOCUMENT, pid, atoi(argv[2]), -1,  NULL, NULL, NULL, NULL, NULL);
+        request = create_packet(DELETE_DOCUMENT, pid, atoi(argv[2]), -1,  NULL, NULL, NULL, NULL, NULL, -1);
         break;
     case 'l':
-        request = create_packet(COUNT_LINES, pid, atoi(argv[2]), -1, argv[3], NULL, NULL, NULL, NULL);
+        request = create_packet(COUNT_LINES, pid, atoi(argv[2]), -1, argv[3], NULL, NULL, NULL, NULL, -1);
         break;
     case 's':
-        request = create_packet(SEARCH_DOCUMENTS, pid, -1, -1, argv[2], NULL, NULL, NULL, NULL);
+        request = create_packet(SEARCH_DOCUMENTS, pid, -1, -1, argv[2], NULL, NULL, NULL, NULL, atoi(argv[3]));
         break;
     case 'f':
-        request = create_packet(SHUTDOWN_SERVER, pid, -1, -1, NULL, NULL, NULL, NULL, NULL);
+        request = create_packet(SHUTDOWN_SERVER, pid, -1, -1, NULL, NULL, NULL, NULL, NULL, -1);
         break;
     default:
         perror("Invalid option\n");

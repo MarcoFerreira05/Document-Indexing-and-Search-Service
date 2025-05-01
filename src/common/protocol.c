@@ -46,7 +46,7 @@ int close_pipe(int pipe_fd) {
 }
  
 Packet *create_packet(Code code, pid_t src_pid, int key, int lines, char *keyword,
-                      char *title, char *authors, char *year, char *path) {
+                      char *title, char *authors, char *year, char *path, int n_procs) {
     Packet *packet = (Packet *)malloc(sizeof(Packet));
     packet->code = code;
     packet->src_pid = src_pid;
@@ -61,6 +61,8 @@ Packet *create_packet(Code code, pid_t src_pid, int key, int lines, char *keywor
         strcpy(packet->year, year);
         strcpy(packet->path, path);
     }
+    packet->n_procs = n_procs;
+    
     return packet;
 }
 
