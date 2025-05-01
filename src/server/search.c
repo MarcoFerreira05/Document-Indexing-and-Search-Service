@@ -5,19 +5,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <glib.h>
+#include <ctype.h>
 
 
 // apenas para teste
 char* get_path(int key) {
     char *path = malloc(sizeof(char) * 12);
 
-    snprintf(path, 12, "teste%d.txt", key);
+    snprintf(path, 22, "dataset/%d.txt", key);
 
     return path;
 }
 
 
-int search_keyword_in_file(int key, char *keyword) {
+int search_keyword_in_file(int key, char *keyword, int one_ocurrence) {
     /* interação com a estrutura central
     get_packet(key)???
     */
@@ -44,10 +45,15 @@ int search_keyword_in_file(int key, char *keyword) {
             close(fildes[1]);
             return -1;
         }
-        if(execlp("grep", "grep", "-c", keyword, file_path, NULL) == -1) {
+        if(!one_ocurrence && execlp("grep", "grep", "-c", keyword, file_path, NULL) == -1) {
             perror("execlp");
             close(fildes[1]);
-            return -1;
+            _exit(-1);
+        }
+        else if(one_ocurrence && execlp("grep", "grep", "-c", "-m", "1", keyword, file_path, NULL) == -1) {
+            perror("execlp");
+            close(fildes[1]);
+            _exit(-1);
         }
     }
 
@@ -61,8 +67,8 @@ int search_keyword_in_file(int key, char *keyword) {
         return -1;
     }
     
-    char line_count[10] = {'\0'};
-    ssize_t bytes_read = read(fildes[0], line_count, sizeof(int));
+    char line_count[11] = {'\0'};
+    ssize_t bytes_read = read(fildes[0], line_count, 11);
     if(bytes_read == -1) {
         perror("read");
         close(fildes[0]);
@@ -84,7 +90,7 @@ GArray* docs_with_keyword(GArray *keys, char *keyword) {
     int i, key;
     for(i = 0; i < keys->len; i++) {
         key = g_array_index(keys, int, i);
-        if(search_keyword_in_file(key, keyword) > 0) g_array_append_val(docs_with_keyword, key);
+        if(search_keyword_in_file(key, keyword, 1) > 0) g_array_append_val(docs_with_keyword, key);
     }
 
     return docs_with_keyword;
@@ -126,7 +132,7 @@ GArray* docs_with_keyword_concurrent(GArray *keys, char *keyword, int number_pro
             ssize_t br;
             int key;
             while((br = read(keys_pipe[0], &key, sizeof(int))) != 0) {
-                if(search_keyword_in_file(key, keyword) > 0) {
+                if(search_keyword_in_file(key, keyword, 1) > 0) {
                     if(write(found_pipe[1], &key, sizeof(int)) == -1) {
                         perror("write");
                         close(keys_pipe[0]);
@@ -184,16 +190,64 @@ GArray* docs_with_keyword_concurrent(GArray *keys, char *keyword, int number_pro
 }
 
 
-// apenas para teste
-/*int main(int argc, char **argv) {
-    if(argc == 3) printf("%d\n", search_keyword_in_file(atoi(argv[1]), argv[2]));
+// apenas para teste VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+/*
+int get_keys_from_script(GArray *keys) {
+    int fildes[2];
+    if(pipe(fildes) == -1) {
+        perror("pipe");
+        return -1;
+    }
+
+    pid_t child_id = fork();
+    if(child_id == -1) {
+        perror("fork");
+        return -1;
+    }
+    else if(child_id == 0) {
+        close(fildes[0]);
+        dup2(fildes[1], 1);
+        execlp("python3", "python3", "getkeys.py", NULL);
+        close(fildes[1]);
+        _exit(0);
+    }
+
+    close(fildes[1]);
+    
+    ssize_t br = 0;
+    char buffer;
+    char key_builder[10] = {'\0'};
+    int key, kb_index;
+    while((br = read(fildes[0], &buffer, sizeof(char))) > 0) {
+        if(buffer == '\n') {
+            key = atoi(key_builder);
+            g_array_append_val(keys, key);
+            for(int i = 0; i < 10; i++) key_builder[i] = '\0';
+            kb_index = 0;
+        }
+        else if(isdigit(buffer)) {
+            key_builder[kb_index] = buffer;
+            kb_index++;
+        }
+    }
+    if(br == -1) {
+        perror("read");
+        return -1;
+    }
+
+    close(fildes[0]);
+
+    return 0;
+}
+
+int main(int argc, char **argv) {
+    if(argc == 3) printf("%d\n", search_keyword_in_file(atoi(argv[1]), argv[2], 0));
     else {
         GArray *keys = g_array_new(FALSE, TRUE, sizeof(int));
-        for(int i = 1; i <= 6; i++) {
-            g_array_append_val(keys, i);
-        }
+        
+        get_keys_from_script(keys);
 
-        GArray *docs_with_kw = docs_with_keyword_concurrent(keys, argv[1], 3);
+        GArray *docs_with_kw = docs_with_keyword_concurrent(keys, argv[1], 10);
 
         for(int i = 0; i < docs_with_kw->len; i++) {
             printf("%d\n", g_array_index(docs_with_kw, int, i));
