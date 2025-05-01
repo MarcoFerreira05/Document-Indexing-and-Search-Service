@@ -17,9 +17,10 @@
  * 
  * Inicia a cache.
  * 
+ * @param size Tamanho da cache (default 10).
  * @return 0 em caso de sucesso, -1 em caso de erro.
  */
-int cacheInit();
+int cacheInit(int size);
 
 /**
  * @brief Adiciona um novo valor à cache.

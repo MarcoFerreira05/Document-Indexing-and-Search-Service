@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <glib.h>
 #include <index.h>
-#define CACHE_SIZE 10
 
+
+int Cache_size = 10;
 GHashTable* Cache = NULL;
 GList* OnCache= NULL;
 int AddOffset = 0;
@@ -59,8 +60,11 @@ int cacheRemove(){
     return 0;
 }
 
-int cacheInit() {
+int cacheInit(int CacheSize) {
 
+    if(CacheSize > 0){
+        Cache_size = CacheSize;
+    }
     if(Cache == NULL){
 
         Cache = g_hash_table_new_full(g_str_hash, g_int_equal, g_free, g_free);
@@ -82,7 +86,7 @@ int cacheInit() {
 int cacheAdd(void *value) {
 
     if(Cache == NULL){
-        if(cacheInit() == -1){
+        if(cacheInit(Cache_size) == -1){
             perror("Cache not initialized\n");
             return -1;
         }
@@ -102,7 +106,7 @@ int cacheAdd(void *value) {
     page->ref = 1;
     page->dirty = 1;
 
-    if(g_list_length(OnCache) >= CACHE_SIZE){
+    if(g_list_length(OnCache) >= Cache_size){
         //Se a cache estiver cheia, remover o LRU element
         if(cacheRemove() == -1){
             perror("Failed to remove LRU element from cache\n");
@@ -119,7 +123,7 @@ int cacheAdd(void *value) {
 void* cacheGet(int key) {
 
     if(Cache == NULL){
-        if(cacheInit() == -1){
+        if(cacheInit(Cache_size) == -1){
             perror("Cache not initialized\n");
             return NULL;
         }
@@ -147,7 +151,7 @@ void* cacheGet(int key) {
             page->ref = 1;
             page->dirty = 0;
             
-            if(g_list_length(OnCache) >= CACHE_SIZE){
+            if(g_list_length(OnCache) >= Cache_size){
                 //Se a cache estiver cheia, remover o LRU element
                 if(cacheRemove() == -1){
                     perror("Failed to remove LRU element from cache\n");
@@ -168,7 +172,7 @@ void* cacheGet(int key) {
 int cacheDelete(int key) {
 
     if(Cache == NULL){
-        if(cacheInit() == -1){
+        if(cacheInit(Cache_size) == -1){
             perror("Cache not initialized\n");
             return -1;
         }
@@ -203,7 +207,7 @@ int cacheDelete(int key) {
 int cacheDestroy() {
 
     if(Cache == NULL){
-        if(cacheInit() == -1){
+        if(cacheInit(Cache_size) == -1){
             perror("Cache not initialized\n");
             return -1;
         }
@@ -239,7 +243,7 @@ GArray* listDocuments() {
     GArray* documents = g_array_new(FALSE, FALSE, sizeof(int));
     
     if(Cache == NULL){
-        if(cacheInit() == -1){
+        if(cacheInit(Cache_size) == -1){
             perror("Cache not initialized\n");
             return NULL;
         }
