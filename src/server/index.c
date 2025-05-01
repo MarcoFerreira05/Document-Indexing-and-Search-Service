@@ -7,9 +7,11 @@
 #include "command.h"
 #include "protocol.h"
 
+#define INDEX_FILE "index"
+
 int IndexGetKey(){
     //Verificar se o arquivo Index existe
-    int IndexFile = open("IndexFile.txt", O_RDONLY | O_CREAT| O_APPEND, 0600);
+    int IndexFile = open(INDEX_FILE, O_RDONLY | O_CREAT| O_APPEND, 0600);
     if(IndexFile == -1){
         //Erro ao abrir o arquivo
         perror("Erro ao abrir o arquivo de índice");
@@ -33,7 +35,7 @@ int IndexGetKey(){
 int IndexAddManager(IndexPack argument,int key){
 
     //Verificar se o arquivo Index existe 
-    int IndexFile = open("IndexFile.txt", O_WRONLY | O_CREAT, 0600); 
+    int IndexFile = open(INDEX_FILE, O_WRONLY | O_CREAT, 0600); 
     
     if(IndexFile == -1){
         //Erro ao abrir o arquivo
@@ -70,7 +72,7 @@ int IndexAddManager(IndexPack argument,int key){
 IndexPack IndexConsultManager(int key){
     
     //Verificar se o arquivo Index existe
-    int IndexFile = open("IndexFile.txt", O_RDONLY , 0600);
+    int IndexFile = open(INDEX_FILE, O_RDONLY , 0600);
     if(IndexFile == -1){
         //Erro ao abrir o arquivo
         perror("Erro ao abrir o arquivo de índice");
@@ -103,7 +105,7 @@ IndexPack IndexConsultManager(int key){
 int IndexDeleteManager(int key,IndexPack BlankPackage){
 
     //Verificar se o arquivo Index existe
-    int IndexFile = open("IndexFile.txt", O_WRONLY, 0600);
+    int IndexFile = open(INDEX_FILE, O_WRONLY, 0600);
     if(IndexFile == -1){
         //Erro ao abrir o arquivo
         perror("Erro ao abrir o arquivo de índice");

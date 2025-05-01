@@ -88,13 +88,13 @@ void handle_count_lines(Packet *request, char *folder_path) {
 
 void handle_search_documents(Packet *request, char *folder_path) {
 
-    GArray *docs_with_kw = NULL;
+    GArray *keys = NULL;
 
     if(request->n_procs <= 1) {
-        docs_with_kw = docs_with_keyword(request->keyword, folder_path);
+        keys = docs_with_keyword(request->keyword, folder_path);
     }
     else {
-        docs_with_kw = docs_with_keyword_concurrent(request->keyword, request->n_procs, folder_path);
+        keys = docs_with_keyword_concurrent(request->keyword, request->n_procs, folder_path);
     }
 
     char response_pipe[MAX_PIPE_SIZE];
@@ -102,15 +102,33 @@ void handle_search_documents(Packet *request, char *folder_path) {
     
     int response_pipe_fd = open(response_pipe, O_WRONLY);
     
-    for (int i = 1; i <= docs_with_kw->len; i++) {
-        Packet *response = create_packet(SUCCESS, -1, g_array_index(docs_with_kw, int, i), -1, NULL,
+    if (keys->len == 0) {
+        Packet *response = create_packet(FAILURE, -1, -1, -1, NULL,
+                                         NULL, NULL, NULL, NULL, -1);
+        send_packet(response, response_pipe_fd);
+        delete_packet(response);
+    } else for (int i = 1; i <= keys->len; i++) {
+        Packet *response = create_packet(SUCCESS, -1, g_array_index(keys, int, i), -1, NULL,
                                          NULL, NULL, NULL, NULL, -1);
         send_packet(response, response_pipe_fd);
         delete_packet(response);
     }
-    close_pipe(response_pipe_fd);
 
-    g_array_free(docs_with_kw, FALSE);
+    g_array_free(keys, FALSE);
+    close_pipe(response_pipe_fd);
+}
+
+void handle_shutdown_server(Packet *request) {
+    run = 0;
+    char response_pipe[MAX_PIPE_SIZE];
+    snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
+    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
+
+    Packet *response = create_packet(SUCCESS, -1, -1, -1, NULL,
+                                     NULL, NULL, NULL, NULL, -1);
+    send_packet(response, response_pipe_fd);
+    delete_packet(response);
+    close_pipe(response_pipe_fd);
 }
 
 void handle_request(Packet *request, char *documents_folder) {
@@ -132,7 +150,7 @@ void handle_request(Packet *request, char *documents_folder) {
             handle_search_documents(request, documents_folder);
             break;
         case SHUTDOWN_SERVER:
-            run = 0;
+            handle_shutdown_server(request);
             break;
         default:
             perror("Invalid request type\n");

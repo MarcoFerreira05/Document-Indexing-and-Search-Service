@@ -4,50 +4,78 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
-
-/*
-EXAMPLE USAGE:
-dclient -a "title" "authors" "year" "path"      ||      243123
-dclient -c 243123                               ||      biblia jesus 0034 src/...
-dclient -d 243123                               ||      Document deleted
-dclient -l 243123 "teste"                       ||      34
-dclient -s "teste"                              ||      1 2 3 4 5
-*/
+#include <glib.h>
 
 int main(int argc, char **argv) {
-    if (argc < 2 || argc > 6) {
-        fprintf(stderr, "Usage: %s <option> <arguments>\n", argv[0]);
+
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s -<option> [args...]\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
     char option = argv[1][1];
     pid_t pid = getpid();
 
-
     // Create request packet
     Packet *request;
     switch (option)
     {
     case 'a':
-        request = create_packet(ADD_DOCUMENT, pid, -1, -1, NULL, argv[2], argv[3], argv[4], argv[5], -1);
+        if (argc != 6) {
+            fprintf(stderr, "Usage: %s -a <title> <authors> <year> <path>\n", argv[0]);
+            exit(EXIT_FAILURE);
+        }
+        request = create_packet(ADD_DOCUMENT, pid, -1, -1, NULL,
+                                argv[2], argv[3], argv[4], argv[5], -1);
         break;
     case 'c':
-        request = create_packet(QUERY_DOCUMENT, pid, atoi(argv[2]), -1, NULL, NULL, NULL, NULL, NULL, -1);
+        if (argc != 3) {
+            fprintf(stderr, "Usage: %s -c <document_id>\n", argv[0]);
+            exit(EXIT_FAILURE);
+        }
+        request = create_packet(QUERY_DOCUMENT, pid, atoi(argv[2]), -1,
+                                NULL, NULL, NULL, NULL, NULL, -1);
         break;
     case 'd':
-        request = create_packet(DELETE_DOCUMENT, pid, atoi(argv[2]), -1,  NULL, NULL, NULL, NULL, NULL, -1);
+        if (argc != 3) {
+            fprintf(stderr, "Usage: %s -d <document_id>\n", argv[0]);
+            exit(EXIT_FAILURE);
+        }
+        request = create_packet(DELETE_DOCUMENT, pid, atoi(argv[2]), -1,
+                                NULL, NULL, NULL, NULL, NULL, -1);
         break;
     case 'l':
-        request = create_packet(COUNT_LINES, pid, atoi(argv[2]), -1, argv[3], NULL, NULL, NULL, NULL, -1);
+        if (argc != 4) {
+            fprintf(stderr, "Usage: %s -l <document_id> <keyword>\n", argv[0]);
+            exit(EXIT_FAILURE);
+        }
+        request = create_packet(COUNT_LINES, pid, atoi(argv[2]), -1, argv[3],
+                                NULL, NULL, NULL, NULL, -1);
         break;
     case 's':
-        request = create_packet(SEARCH_DOCUMENTS, pid, -1, -1, argv[2], NULL, NULL, NULL, NULL, atoi(argv[3]));
+        if (argc < 3 || argc > 4) {
+            fprintf(stderr, "Usage: %s -s <keyword> <n_procs>\n", argv[0]);
+            exit(EXIT_FAILURE);
+        }
+        int n_procs = (argc == 4) ? atoi(argv[3]) : 1;
+        request = create_packet(SEARCH_DOCUMENTS, pid, -1, -1, argv[2],
+                                NULL, NULL, NULL, NULL, n_procs);
         break;
     case 'f':
-        request = create_packet(SHUTDOWN_SERVER, pid, -1, -1, NULL, NULL, NULL, NULL, NULL, -1);
+        if (argc != 2) {
+            fprintf(stderr, "Usage: %s -f\n", argv[0]);
+            exit(EXIT_FAILURE);
+        }
+        request = create_packet(SHUTDOWN_SERVER, pid, -1, -1,
+                                NULL, NULL, NULL, NULL, NULL, -1);
         break;
     default:
-        perror("Invalid option\n");
+        fprintf(stderr, "\n   -a  |  add document\n");
+        fprintf(stderr, "\n   -c  |  consult document\n");
+        fprintf(stderr, "\n   -d  |  delete document\n");
+        fprintf(stderr, "\n   -l  |  count lines\n");
+        fprintf(stderr, "\n   -s  |  search documents\n");
+        fprintf(stderr, "\n   -f  |  shutdown server\n");
         exit(EXIT_FAILURE);
         break;
     }
@@ -80,10 +108,10 @@ int main(int argc, char **argv) {
 
     case 'c':
         if (response->code == SUCCESS) {
-            printf("Title: %s\nAuthors: %s\nYear: %s\nPath %s\n",
+            printf("Title: %s\nAuthors: %s\nYear: %s\nPath: %s\n",
                    response->title, response->authors, response->year, response->path);
         } else {
-            printf("Failed to find document\n");
+            printf("No document was found\n");
         }
         break;
 
@@ -105,26 +133,40 @@ int main(int argc, char **argv) {
 
     case 's':
         if (response->code == SUCCESS) {
+            GArray *keys = g_array_new(FALSE, FALSE, sizeof(int));
+
             do {
-                printf("%d\n", response->key);
+                g_array_append_val(keys, response->key);
                 delete_packet(response);
                 response = receive_packet(response_pipe_fd);
             } while (response != NULL);
+
+            for (int i = 0; i < keys->len; i++) {
+                if (i == 0) {
+                    printf("[%d, ", g_array_index(keys, int, i));
+                }
+                if (i == keys->len - 1) {
+                    printf("%d]\n", g_array_index(keys, int, i));
+                }
+                else printf("%d, ", g_array_index(keys, int, i));
+            }
+
+            g_array_free(keys, FALSE);
         } else {
-            printf("Failed to search documents\n");
+            printf("No documents were found\n");
         }
         break;
 
     case 'f':
         if (response->code == SUCCESS) {
-            printf("Server shutting down\n");
+            printf("Server is shutting down\n");
         } else {
             printf("Failed to shutdown server\n");
         }
         break;
 
     default:
-        perror("Invalid option\n");
+        fprintf(stderr, "Invalid option\n");
         exit(EXIT_FAILURE);
         break;
     }
