@@ -23,7 +23,6 @@ void print_hash_table(GHashTable *table) {
     g_hash_table_foreach(table, print_entry, NULL);
 }
 
-
 /*--------------------------------*/
 
 
@@ -49,7 +48,7 @@ void print_glist_cachepages(GList *list) {
     }
     printf("NULL\n");
 }
-//_________
+//_____
 
 //remove o LRU element from cache
 int cacheRemove(){

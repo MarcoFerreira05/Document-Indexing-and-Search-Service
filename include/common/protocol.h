@@ -10,6 +10,7 @@
 #define RESPONSE_PIPE_TEMPLATE "response_pipe_%d"
 
 // Maximum sizes for various fields
+#define MAX_METADATA_SIZE 200
 #define MAX_KEYWORD_SIZE 32
 #define MAX_TITLE_SIZE 190
 #define MAX_AUTHORS_SIZE 200
@@ -52,7 +53,7 @@ int open_pipe(char *pipe_name, int flags);
 int close_pipe(int pipe_fd);
 Packet *create_packet(Code code, pid_t src_pid, int key, int lines, char *keyword,
                       char *title, char *authors, char *year, char *path);
-void delete_packet(Packet *packet);
+int delete_packet(Packet *packet);
 int send_packet(Packet *packet, int pipe_fd);
 Packet *receive_packet(int pipe_fd);
 void debug_packet(char *header, Packet *packet); // debug

@@ -38,7 +38,7 @@ typedef struct indexPackage{
  * @param ToIndex Ponteiro para um array de strings que representa o documento a indexar.
  * @return Retorna a key onde o mesmo foi indexado ou -1 em caso de erro.
  */
-int AddDocument(char **ToIndex);
+int AddDocument(char title[], char authors[], char year[], char path[]);
 
 /**
  * @brief Remove um documento do índice.

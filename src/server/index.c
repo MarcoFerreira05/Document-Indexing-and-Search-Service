@@ -7,9 +7,6 @@
 #include "command.h"
 #include "protocol.h"
 
-
-
-
 int IndexGetKey(){
     //Verificar se o arquivo Index existe
     int IndexFile = open("IndexFile.txt", O_RDONLY | O_CREAT| O_APPEND, 0600);

@@ -64,11 +64,17 @@ Packet *create_packet(Code code, pid_t src_pid, int key, int lines, char *keywor
     return packet;
 }
 
-void delete_packet(Packet *packet) {
-    if (packet != NULL) free(packet);
+int delete_packet(Packet *packet) {
+    if (packet != NULL) {
+        free(packet);
+        return 0;
+    } else {
+        return -1;
+    }
 }
 
 int send_packet(Packet *packet, int pipe_fd) {
+    // debug_packet("Sending packet", packet);
     write(pipe_fd, packet, sizeof(Packet));
     return 0;
 }
@@ -76,8 +82,10 @@ int send_packet(Packet *packet, int pipe_fd) {
 Packet *receive_packet(int pipe_fd) {
     Packet *packet = (Packet *)malloc(sizeof(Packet));
     ssize_t s = read(pipe_fd, packet, sizeof(Packet));
-
-    if (s == 0) {
+    if (s > 0) {
+        // debug_packet("Received packet", packet);
+    } else if (s == 0) {
+        printf("Read 0 bytes\n");
         free(packet);
         packet = NULL;
     } else if (s < 0) {

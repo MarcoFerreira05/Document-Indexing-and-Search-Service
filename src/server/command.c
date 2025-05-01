@@ -17,15 +17,15 @@
  * @param ToIndex Ponteiro para um array de strings que representa o documento a indexar.
  * @return Retorna a key onde o mesmo foi indexado ou -1 em caso de erro.
  */
-int AddDocument(char **ToIndex){
+int AddDocument(char title[], char authors[], char year[], char path[]){
 
     //Criação do pacote a ser indexado
     IndexPack PackToIndex = g_malloc(sizeof(struct indexPackage));
     PackToIndex->deleted = 0;
-    strcpy(PackToIndex->Title,ToIndex[0]);
-    strcpy(PackToIndex->authors,ToIndex[1]);
-    strcpy(PackToIndex->year,ToIndex[2]);
-    strcpy(PackToIndex->path,ToIndex[3]);
+    strcpy(PackToIndex->Title, title);
+    strcpy(PackToIndex->authors, authors);
+    strcpy(PackToIndex->year, year);
+    strcpy(PackToIndex->path,path);
     
     //Enviar pacote para indexação e retorna a key (ou -1 em caso de erro)
     int Key = cacheAdd(PackToIndex);
