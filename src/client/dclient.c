@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
                 if (i == 0) {
                     printf("[%d, ", g_array_index(keys, int, i));
                 }
-                if (i == keys->len - 1) {
+                else if (i == keys->len - 1) {
                     printf("%d]\n", g_array_index(keys, int, i));
                 }
                 else printf("%d, ", g_array_index(keys, int, i));
