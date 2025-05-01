@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
     {
     case 'a':
         if (response->code == SUCCESS) {
-            printf("%d\n", response->key);
+            printf("Document %d indexed\n", response->key);
         } else {
             printf("Failed to add document\n");
         }
@@ -80,7 +80,8 @@ int main(int argc, char **argv) {
 
     case 'c':
         if (response->code == SUCCESS) {
-            printf("%s %s %s %s\n", response->title, response->authors, response->year, response->path);
+            printf("Title: %s\nAuthors: %s\nYear: %s\nPath %s\n",
+                   response->title, response->authors, response->year, response->path);
         } else {
             printf("Failed to find document\n");
         }
@@ -88,7 +89,7 @@ int main(int argc, char **argv) {
 
     case 'd':
         if (response->code == SUCCESS) {
-            printf("Document deleted\n");
+            printf("Index entry %d deleted\n", response->key);
         } else {
             printf("Failed to delete document\n");
         }

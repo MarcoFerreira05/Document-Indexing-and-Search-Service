@@ -14,7 +14,7 @@
 
 int run = 1;
 
-void handle_add_document(Packet *request, char *documents_folder) {
+void handle_add_document(Packet *request) {
 
     int key = AddDocument(request->title, request->authors, request->year, request->path);
 
@@ -54,11 +54,11 @@ void handle_delete_document(Packet *request) {
 
     Packet *response;
     if (!deleteDocument(request->key)) {
-        response = create_packet(SUCCESS, -1, -1, -1, NULL,
-            NULL, NULL, NULL, NULL, -1);
+        response = create_packet(SUCCESS, -1, request->key, -1, NULL,
+                                 NULL, NULL, NULL, NULL, -1);
     } else {
         response = create_packet(FAILURE, -1, -1, -1, NULL,
-            NULL, NULL, NULL, NULL, -1);
+                                 NULL, NULL, NULL, NULL, -1);
     }
     
     char response_pipe[MAX_PIPE_SIZE];
@@ -117,7 +117,7 @@ void handle_request(Packet *request, char *documents_folder) {
 
     switch (request->code) {
         case ADD_DOCUMENT:
-            handle_add_document(request, documents_folder);
+            handle_add_document(request);
             break;
         case QUERY_DOCUMENT:
             handle_query_document(request);
@@ -143,16 +143,13 @@ void handle_request(Packet *request, char *documents_folder) {
 void server_run(char *documents_folder, int cache_size) {
 
     // Initialize cache
-    if (cache_size > 0) {
-        if (cacheInit(cache_size) == -1) {
-            perror("Failed to initialize cache\n");
-            exit(EXIT_FAILURE);
-        }
+    if (cacheInit(cache_size) == -1) {
+        perror("Failed to initialize cache\n");
+        exit(EXIT_FAILURE);
     }
 
     // Create request pipe
     create_pipe(REQUEST_PIPE);
-    // int request_pipe_aux = open_pipe(REQUEST_PIPE, O_WRONLY);
     int request_pipe_fd = open_pipe(REQUEST_PIPE, O_RDWR);
 
     while (run) {
@@ -210,7 +207,7 @@ void server_run(char *documents_folder, int cache_size) {
 }
 
 int main(int argc, char **argv) {
-    // Check for correct number of arguments
+    // Validate arguments
     if (argc < 2 || argc > 3) {
         fprintf(stderr, "Usage: %s <documents_folder> [cache_size]\n"
                         "Note: <required> | [optional>\n", argv[0]);
