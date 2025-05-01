@@ -100,7 +100,7 @@ void handle_search_documents(Packet *request, char *folder_path) {
     char response_pipe[MAX_PIPE_SIZE];
     snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
     
-    int response_pipe_fd = open(response_pipe, O_WRONLY);
+    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
     
     if (keys->len == 0) {
         Packet *response = create_packet(FAILURE, -1, -1, -1, NULL,
@@ -186,7 +186,6 @@ void server_run(char *documents_folder, int cache_size) {
                     if (pid == 0) {
                         // Child process
                         handle_request(request, documents_folder);
-                        int request_pipe_fd = open_pipe(REQUEST_PIPE, O_WRONLY);
                         Packet *kill_request = create_packet(TERMINATE_CHILD, getpid(), -1, -1, NULL,
                                                              NULL, NULL, NULL, NULL, -1);
                         send_packet(kill_request, request_pipe_fd);
