@@ -57,11 +57,11 @@ int cacheRemove(){
     //Remover o LRU element
     GList* emCheck = g_list_first(OnCache);
     
-    print_glist_cachepages(emCheck);
+    //print_glist_cachepages(emCheck);
     
     while(emCheck != NULL){
 
-        print_hash_table(Cache);
+        //print_hash_table(Cache);
 
         //printf("Visiting key %d\n", *(int*)emCheck->data);
         CachePage cachePage = (CachePage)emCheck->data;
@@ -89,7 +89,7 @@ int cacheRemove(){
                 OnCache = g_list_delete_link(OnCache, emCheck);
             }
             //printf("Cache after removing key\n");
-            print_glist_cachepages(g_list_first(OnCache));
+            //print_glist_cachepages(g_list_first(OnCache));
             break;
         }
         
@@ -166,7 +166,7 @@ int cacheAdd(void *value) {
     *key_ptr = key;
     g_hash_table_insert(Cache, key_ptr, value);
     OnCache = g_list_append(OnCache, page);
-    print_glist_cachepages(g_list_first(OnCache));
+    //print_glist_cachepages(g_list_first(OnCache));
     return key;
 
 }
