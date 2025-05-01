@@ -175,7 +175,7 @@ int cacheAdd(void *value) {
 
 void* cacheGet(int key) {
 
-    if(Cache == NULL){
+    if(Cache == NULL || key > AddOffset){
         if(cacheInit(Cache_size) == -1){
             perror("Cache not initialized\n");
             return NULL;

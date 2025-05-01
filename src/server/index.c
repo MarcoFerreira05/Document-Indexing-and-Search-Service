@@ -99,6 +99,8 @@ IndexPack IndexConsultManager(int key){
         return NULL;
     }
 
+    close(IndexFile);
+
     return (IndexPack) pack;
 }
 
