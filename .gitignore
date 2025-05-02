@@ -60,3 +60,6 @@ dkms.conf
 # Text files
 *.txt
 *.tsv
+
+# Ignore Dataset Folder
+Dataset/
