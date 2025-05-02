@@ -62,7 +62,7 @@ dkms.conf
 *.tsv
 
 # Ignore Dataset Folder
-Dataset/
+dataset/
 
 # Index file
 index
