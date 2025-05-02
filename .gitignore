@@ -63,3 +63,6 @@ dkms.conf
 
 # Ignore Dataset Folder
 Dataset/
+
+# Index file
+index

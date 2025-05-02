@@ -107,7 +107,7 @@ void handle_search_documents(Packet *request, char *folder_path) {
                                          NULL, NULL, NULL, NULL, -1);
         send_packet(response, response_pipe_fd);
         delete_packet(response);
-    } else for (int i = 1; i <= keys->len; i++) {
+    } else for (int i = 0; i < keys->len; i++) {
         Packet *response = create_packet(SUCCESS, -1, g_array_index(keys, int, i), -1, NULL,
                                          NULL, NULL, NULL, NULL, -1);
         send_packet(response, response_pipe_fd);
