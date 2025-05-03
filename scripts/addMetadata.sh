@@ -7,7 +7,7 @@ if [ "$#" -ne 0 ]; then
     exit 1
 fi
 
-INPUT_FILE="Gcatalog.tsv"
+INPUT_FILE="dataset/Gcatalog.tsv"
 
 # Check if input file exists before proceeding
 if [ ! -f "$INPUT_FILE" ]; then

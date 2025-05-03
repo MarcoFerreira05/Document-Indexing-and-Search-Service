@@ -28,7 +28,7 @@
  */
 typedef enum code {
     ADD_DOCUMENT = 0,       ///< Request to add a new document.
-    QUERY_DOCUMENT,         ///< Request to query document metadata.
+    CONSULT_DOCUMENT,       ///< Request to consult document metadata.
     DELETE_DOCUMENT,        ///< Request to delete document metadata.
     COUNT_LINES,            ///< Request to count lines containing a keyword.
     SEARCH_DOCUMENTS,       ///< Request to search documents containing a keyword.

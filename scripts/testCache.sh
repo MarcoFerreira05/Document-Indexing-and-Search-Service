@@ -13,10 +13,10 @@ KEY=-1
 
 while [ $COUNT -lt $NUMBER_CONSULTS ]
 do
-    echo "------------------------------"
-    KEY=$(($RANDOM % 2000))
+    echo "----"
+    KEY=$(($RANDOM % 2500))
     echo "Consulting key $KEY:"
-    bin/dclient -c $KEY
+    bin/dclient -c "$KEY"
     ((COUNT++))
 done
 

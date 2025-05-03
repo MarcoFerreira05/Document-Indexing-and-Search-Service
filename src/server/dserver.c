@@ -22,14 +22,21 @@ void handle_add_document(Packet *request) {
     snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
     int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
 
-    Packet *response = create_packet(SUCCESS, -1, key, -1, NULL,
-                                     NULL, NULL, NULL, NULL, -1);
+    Packet *response;
+    if (key == -1) {
+        response = create_packet(FAILURE, -1, -1, -1, NULL,
+                                 NULL, NULL, NULL, NULL, -1);
+    } else {
+        response = create_packet(SUCCESS, -1, key, -1, NULL,
+                                 NULL, NULL, NULL, NULL, -1);
+    }
+
     send_packet(response, response_pipe_fd);
     delete_packet(response);
     close_pipe(response_pipe_fd);
 }
 
-void handle_query_document(Packet *request) {
+void handle_consult_document(Packet *request) {
 
     char **metadata = consultDocument(request->key);
 
@@ -71,15 +78,21 @@ void handle_delete_document(Packet *request) {
 }
 
 void handle_count_lines(Packet *request, char *folder_path) {
-
+    
     int lines = search_keyword_in_file(request->key, request->keyword, 0, folder_path);
 
     char response_pipe[MAX_PIPE_SIZE];
     snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
     int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
 
-    Packet *response = create_packet(SUCCESS, -1, -1, lines, NULL,
-                                     NULL, NULL, NULL, NULL, -1);
+    Packet *response;
+    if (lines == -1) {
+        response = create_packet(FAILURE, -1, -1, -1, NULL,
+                                 NULL, NULL, NULL, NULL, -1);
+    } else {
+        response = create_packet(SUCCESS, -1, -1, lines, NULL,
+                                 NULL, NULL, NULL, NULL, -1);
+    }
     
     send_packet(response, response_pipe_fd);
     delete_packet(response);
@@ -107,11 +120,13 @@ void handle_search_documents(Packet *request, char *folder_path) {
                                          NULL, NULL, NULL, NULL, -1);
         send_packet(response, response_pipe_fd);
         delete_packet(response);
-    } else for (int i = 0; i < keys->len; i++) {
+    } else {
+        for (int i = 0; i < keys->len; i++) {
         Packet *response = create_packet(SUCCESS, -1, g_array_index(keys, int, i), -1, NULL,
                                          NULL, NULL, NULL, NULL, -1);
         send_packet(response, response_pipe_fd);
         delete_packet(response);
+        }
     }
 
     g_array_free(keys, FALSE);
@@ -137,8 +152,8 @@ void handle_request(Packet *request, char *documents_folder) {
         case ADD_DOCUMENT:
             handle_add_document(request);
             break;
-        case QUERY_DOCUMENT:
-            handle_query_document(request);
+        case CONSULT_DOCUMENT:
+            handle_consult_document(request);
             break;
         case DELETE_DOCUMENT:
             handle_delete_document(request);
@@ -181,7 +196,8 @@ void server_run(char *documents_folder, int cache_size) {
                 snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
                 int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
                 
-                if (request->code == QUERY_DOCUMENT || request->code == COUNT_LINES || request->code == SEARCH_DOCUMENTS) {
+                // Fork in case the request is a search
+                if (request->code == CONSULT_DOCUMENT || request->code == COUNT_LINES || request->code == SEARCH_DOCUMENTS) {
                     pid_t pid = fork();
                     if (pid == 0) {
                         // Child process

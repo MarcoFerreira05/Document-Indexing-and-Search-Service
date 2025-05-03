@@ -27,4 +27,4 @@ obj/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJ_FILES) bin/*
+	rm -f $(OBJ_FILES) bin/* tmp/* index

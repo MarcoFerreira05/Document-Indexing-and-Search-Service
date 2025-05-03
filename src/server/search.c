@@ -22,6 +22,10 @@
 int search_keyword_in_file(int key, char *keyword, int one_ocurrence, char *folder_path) {
     char **metainfo = consultDocument(key);
 
+    if (metainfo == NULL) {
+        return -1;
+    }
+
     char file_path[64];
     snprintf(file_path, 64, "%s/%s", folder_path, metainfo[3]);
 
