@@ -55,4 +55,8 @@ while IFS=$'\t' read -r filename title year authors; do
 
 done < <(tail -n +2 "$INPUT_FILE")
 
+# 5. Delete document
+echo "--> Running: bin/dclient -f"
+bin/dclient -f
+
 echo -e "\nTested all commands for $(( (MAX_TESTS>0 && COUNT>MAX_TESTS) ? MAX_TESTS : COUNT )) files."
