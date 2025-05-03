@@ -75,7 +75,7 @@ int cacheRemove(){
                 IndexPack pack = g_hash_table_lookup(Cache, &cachePage->key);
                 if(pack != NULL){
                     if(IndexAddManager(pack,cachePage->key) == -1){
-                        perror("Failed to write cache page to disk\n");
+                        //os erros são impressos na função de add
                         return -1;
                     }
                 }
@@ -115,12 +115,12 @@ int cacheInit(int CacheSize) {
 
 
         if(Cache == NULL){
-            perror("Failed to create cache\n");
+            perror("Failed to create cache");
             return -1;
         }
         AddOffset = IndexGetKey();
     }else{
-        perror("Cache already initialized\n");
+        puts("Cache already initialized\n");
         return -1;
     } 
 
@@ -131,8 +131,8 @@ int cacheInit(int CacheSize) {
 int cacheAdd(void *value) {
 
     if(Cache == NULL){
+        puts("Cache not initialized\n");
         if(cacheInit(Cache_size) == -1){
-            perror("Cache not initialized\n");
             return -1;
         }
     }
@@ -144,7 +144,7 @@ int cacheAdd(void *value) {
     //printf("\n\n\n-Request to add value to cache with key %d\n",key);
     CachePage page = malloc(sizeof(struct cachepage));
     if(page == NULL){
-        perror("Failed to allocate memory for cache page\n");
+        perror("Failed to allocate memory for cache page");
         return -1;
       }
 
@@ -156,7 +156,7 @@ int cacheAdd(void *value) {
         //Se a cache estiver cheia, remover o LRU element
         //printf("Cache is full, removing LRU element\n");
         if(cacheRemove() == -1){
-            perror("Failed to remove LRU element from cache\n");
+            perror("Failed to remove LRU element from cache");
             return -1;
         }
     }
@@ -174,12 +174,16 @@ int cacheAdd(void *value) {
 
 void* cacheGet(int key) {
 
-    if(Cache == NULL || key > AddOffset){
+    if(Cache == NULL){
+        puts("Cache not initialized\n");
         if(cacheInit(Cache_size) == -1){
-            perror("Cache not initialized\n");
             return NULL;
         }
-    }    
+    }
+
+    if(key >= AddOffset) {
+        return NULL;
+    }
 
     IndexPack pack = g_hash_table_lookup(Cache, &key);
 
@@ -204,7 +208,7 @@ void* cacheGet(int key) {
             if(g_list_length(OnCache) >= Cache_size){
                 //Se a cache estiver cheia, remover o LRU element
                 if(cacheRemove() == -1){
-                    perror("Failed to remove LRU element from cache\n");
+                    perror("Failed to remove LRU element from cache");
                     return NULL;
                 }
             }
@@ -222,8 +226,8 @@ void* cacheGet(int key) {
 int cacheDelete(int key) {
 
     if(Cache == NULL){
+        puts("Cache not initialized\n");
         if(cacheInit(Cache_size) == -1){
-            perror("Cache not initialized\n");
             return -1;
         }
     }
@@ -267,7 +271,7 @@ int cacheDestroy() {
             IndexPack pack = g_hash_table_lookup(Cache, &cachePage->key);
             if(pack != NULL){
                 if(IndexAddManager(pack,cachePage->key) == -1){
-                    perror("Failed to write cache page to disk\n");
+                    perror("Failed to write cache page to disk");
                     return -1;
                 }
             }
@@ -289,8 +293,8 @@ GArray* listDocuments() {
     GArray* documents = g_array_new(FALSE, FALSE, sizeof(int));
     
     if(Cache == NULL){
+        puts("Cache not initialized\n");
         if(cacheInit(Cache_size) == -1){
-            perror("Cache not initialized\n");
             return NULL;
         }
     }

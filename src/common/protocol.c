@@ -12,7 +12,7 @@
 int create_pipe(char *pipe_name) {
     int fifo = mkfifo(pipe_name, 0666);
     if (fifo < 0) {
-        perror("Failed to create pipe\n");
+        perror("Failed to create pipe");
         return -1;
     }
     return 0;
@@ -21,7 +21,7 @@ int create_pipe(char *pipe_name) {
 int delete_pipe(char *pipe_name) {
     int result = unlink(pipe_name);
     if (result < 0) {
-        perror("Failed to delete pipe\n");
+        perror("Failed to delete pipe");
         return -1;
     }
     return 0;
@@ -30,7 +30,7 @@ int delete_pipe(char *pipe_name) {
 int open_pipe(char *pipe_name, int flags) {
     int fd = open(pipe_name, flags);
     if (fd < 0) {
-        perror("Failed to open pipe fd\n");
+        perror("Failed to open pipe fd");
         return -1;
     }
     return fd;
@@ -39,7 +39,7 @@ int open_pipe(char *pipe_name, int flags) {
 int close_pipe(int pipe_fd) {
     int result = close(pipe_fd);
     if (result < 0) {
-        perror("Failed to close pipe fd\n");
+        perror("Failed to close pipe fd");
         return -1;
     }
     return 0;
@@ -84,14 +84,11 @@ int send_packet(Packet *packet, int pipe_fd) {
 Packet *receive_packet(int pipe_fd) {
     Packet *packet = (Packet *)malloc(sizeof(Packet));
     ssize_t s = read(pipe_fd, packet, sizeof(Packet));
-    if (s > 0) {
-        // debug_packet("Received packet", packet);
-    } else if (s == 0) {
-        printf("Read 0 bytes\n");
+    if (s == 0) {
         free(packet);
         packet = NULL;
     } else if (s < 0) {
-        perror("Read less than 0 bytes\n");
+        perror("Read less than 0 bytes");
         free(packet);
         packet = NULL;
     }

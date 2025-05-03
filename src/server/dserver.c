@@ -153,7 +153,7 @@ void handle_request(Packet *request, char *documents_folder) {
             handle_shutdown_server(request);
             break;
         default:
-            perror("Invalid request type\n");
+            puts("Invalid request type\n");
     }
 }
 
@@ -162,7 +162,7 @@ void server_run(char *documents_folder, int cache_size) {
 
     // Initialize cache
     if (cacheInit(cache_size) == -1) {
-        perror("Failed to initialize cache\n");
+        puts("Failed to initialize cache\n");
         exit(EXIT_FAILURE);
     }
 
@@ -208,14 +208,14 @@ void server_run(char *documents_folder, int cache_size) {
             delete_packet(request);
         } else {
             // Error receiving request
-            perror("Failed to receive request\n");
+            puts("Failed to receive request\n");
         }
     }
 
     while (wait(NULL) > 0);
 
     if(cacheDestroy() == -1) {
-        printf("A destruição da cache correu mal");
+        printf("Failed to destroy cache. Some data was not written to disk\n");
     }
 
     // Close request pipe

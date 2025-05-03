@@ -89,6 +89,9 @@ IndexPack IndexConsultManager(int key){
     }
 
     void* pack = malloc(sizeof(struct indexPackage));
+    if(pack == NULL) {
+        perror("Failed to allocate memory for the pack");
+    }
     ssize_t bytesRead = read(IndexFile, pack, sizeof(struct indexPackage));
     if(bytesRead == -1){
         //Erro ao ler o arquivo
@@ -124,7 +127,10 @@ int IndexDeleteManager(int key,IndexPack BlankPackage){
     }
 
     //Remover o documento
-    write(IndexFile, BlankPackage, sizeof(struct indexPackage));
+    if(write(IndexFile, BlankPackage, sizeof(struct indexPackage)) < 0) {
+        perror("Failed to write empty block");
+        return -1;
+    }
     close(IndexFile);
 
     return 0;

@@ -1,3 +1,6 @@
+# Script that prints every file path in the dataset directory.
+# Used to test the search component without interaction with the rest of the server.
+
 import os
 
 path = ""

@@ -13,8 +13,8 @@
 
 // Pipe Configuration
 #define MAX_PIPE_SIZE 64               ///< Maximum size for pipe names.
-#define REQUEST_PIPE "request_pipe"    ///< Name of the request pipe.
-#define RESPONSE_PIPE_TEMPLATE "response_pipe_%d" ///< Template for response pipe names, where %d is replaced by the process ID.
+#define REQUEST_PIPE "tmp/request_pipe"    ///< Name of the request pipe.
+#define RESPONSE_PIPE_TEMPLATE "tmp/response_pipe_%d" ///< Template for response pipe names, where %d is replaced by the process ID.
 
 // Field Size Limits
 #define MAX_KEYWORD_SIZE 32   ///< Maximum size for keywords.
