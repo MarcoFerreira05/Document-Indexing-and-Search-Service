@@ -223,6 +223,23 @@ void* cacheGet(int key) {
 
 }
 
+
+gint CompareCachePages(  gconstpointer a,gconstpointer b){
+
+    CachePage EmCache = (CachePage) a; 
+    CachePage EmProcura = (CachePage) b;
+
+    if(EmCache->key == EmProcura->key){
+        return 0;
+    }
+    else if(EmCache->key > EmProcura->key){
+        return 1;
+    }else{
+        return -1;
+    }
+}
+
+
 int cacheDelete(int key) {
 
     if(Cache == NULL){
@@ -232,18 +249,29 @@ int cacheDelete(int key) {
         }
     }
 
+        if(cacheGet(key) == NULL || key >= AddOffset){
+        //Chave ja eliminada ou não existe 
+        return -1;
+    }
+
+
     //Verifica se o documento existe no cache e elimina da cache
     IndexPack pack = g_hash_table_lookup(Cache, &key);
     if(pack != NULL){
         g_hash_table_remove(Cache, &key);
-        GList* page = g_list_find_custom(OnCache, &key, (GCompareFunc)g_int_equal);
-        OnCache = g_list_remove_link(OnCache, page);
-        g_list_free_1(page);
-    }
+        
+        CachePage searchPage = malloc(sizeof(struct cachepage));
+        if(searchPage == NULL){
+            perror("Failed to allocate memory for cache page");
+            return -1;
+        }
+        searchPage->key = key;
 
-    if(cacheGet(key) == NULL || key >= AddOffset){
-        //Chave ja eliminada ou não existe 
-        return -1;
+        GList* page = g_list_find_custom(OnCache, searchPage, (GCompareFunc)CompareCachePages);
+        OnCache = g_list_delete_link(OnCache, page);
+        
+        free(searchPage);
+        g_list_free_1(page);
     }
 
     IndexPack BlankPack = g_malloc(sizeof(struct indexPackage));
