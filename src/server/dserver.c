@@ -11,16 +11,37 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <glib.h>
+#include <ctype.h>
 
 int run = 1;
+
+int validate_number(char *str) {
+    for (int i = 0; i < strlen(str); i++) {
+        if (!isdigit(str[i])) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int validate_args(int argc, char **argv) {
+    if (argc < 2 || argc > 3) {
+        fprintf(stderr, "Usage: %s <documents_folder> [cache_size]\n", argv[0]);
+        return 0;
+    }
+
+    if (argc == 3 && (!validate_number(argv[2]) || atoi(argv[2]) <= 0)) {
+        fprintf(stderr, "Cache size must be a positive integer\n");
+        return 0;
+    }
+
+    return 1;
+}
 
 void handle_add_document(Packet *request) {
 
     int key = AddDocument(request->title, request->authors, request->year, request->path);
-
-    char response_pipe[MAX_PIPE_SIZE];
-    snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
-    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
 
     Packet *response;
     if (key == -1) {
@@ -31,6 +52,9 @@ void handle_add_document(Packet *request) {
                                  NULL, NULL, NULL, NULL, -1);
     }
 
+    char response_pipe[MAX_PIPE_SIZE];
+    snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
+    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
     send_packet(response, response_pipe_fd);
     delete_packet(response);
     close_pipe(response_pipe_fd);
@@ -40,10 +64,6 @@ void handle_consult_document(Packet *request) {
 
     char **metadata = consultDocument(request->key);
 
-    char response_pipe[MAX_PIPE_SIZE];
-    snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
-    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
-
     Packet *response;
     if (metadata != NULL) {
         response = create_packet(SUCCESS, -1, -1, -1, NULL,
@@ -52,6 +72,10 @@ void handle_consult_document(Packet *request) {
         response = create_packet(FAILURE, -1, -1, -1, NULL,
                                  NULL, NULL, NULL, NULL, -1);
     }
+    
+    char response_pipe[MAX_PIPE_SIZE];
+    snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
+    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
     send_packet(response, response_pipe_fd);
     delete_packet(response);
     close_pipe(response_pipe_fd);
@@ -71,7 +95,6 @@ void handle_delete_document(Packet *request) {
     char response_pipe[MAX_PIPE_SIZE];
     snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
     int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
-
     send_packet(response, response_pipe_fd);
     delete_packet(response);
     close_pipe(response_pipe_fd);
@@ -80,10 +103,6 @@ void handle_delete_document(Packet *request) {
 void handle_count_lines(Packet *request, char *folder_path) {
     
     int lines = search_keyword_in_file(request->key, request->keyword, 0, folder_path);
-
-    char response_pipe[MAX_PIPE_SIZE];
-    snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
-    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
 
     Packet *response;
     if (lines == -1) {
@@ -94,6 +113,9 @@ void handle_count_lines(Packet *request, char *folder_path) {
                                  NULL, NULL, NULL, NULL, -1);
     }
     
+    char response_pipe[MAX_PIPE_SIZE];
+    snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
+    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
     send_packet(response, response_pipe_fd);
     delete_packet(response);
     close_pipe(response_pipe_fd);
@@ -112,11 +134,15 @@ void handle_search_documents(Packet *request, char *folder_path) {
 
     char response_pipe[MAX_PIPE_SIZE];
     snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
-    
     int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
     
-    if (keys->len == 0) {
+    if (keys == NULL) {
         Packet *response = create_packet(FAILURE, -1, -1, -1, NULL,
+                                         NULL, NULL, NULL, NULL, -1);
+        send_packet(response, response_pipe_fd);
+        delete_packet(response);
+    } else if (keys->len == 0) {
+        Packet *response = create_packet(SUCCESS, -1, -1, -1, NULL,
                                          NULL, NULL, NULL, NULL, -1);
         send_packet(response, response_pipe_fd);
         delete_packet(response);
@@ -134,13 +160,15 @@ void handle_search_documents(Packet *request, char *folder_path) {
 }
 
 void handle_shutdown_server(Packet *request) {
+    
     run = 0;
-    char response_pipe[MAX_PIPE_SIZE];
-    snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
-    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
 
     Packet *response = create_packet(SUCCESS, -1, -1, -1, NULL,
                                      NULL, NULL, NULL, NULL, -1);
+    
+    char response_pipe[MAX_PIPE_SIZE];
+    snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
+    int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
     send_packet(response, response_pipe_fd);
     delete_packet(response);
     close_pipe(response_pipe_fd);
@@ -207,7 +235,7 @@ void server_run(char *documents_folder, int cache_size) {
                         send_packet(kill_request, request_pipe_fd);
                         delete_packet(kill_request);
                         close_pipe(request_pipe_fd);
-                        exit(0);
+                        exit(EXIT_SUCCESS);
                     } else if (pid < 0) {
                         // Fork failed
                         perror("Fork failed\n");
@@ -241,9 +269,7 @@ void server_run(char *documents_folder, int cache_size) {
 
 int main(int argc, char **argv) {
     // Validate arguments
-    if (argc < 2 || argc > 3) {
-        fprintf(stderr, "Usage: %s <documents_folder> [cache_size]\n"
-                        "Note: <required> | [optional>\n", argv[0]);
+    if (!validate_args(argc, argv)) {
         exit(EXIT_FAILURE);
     }
 

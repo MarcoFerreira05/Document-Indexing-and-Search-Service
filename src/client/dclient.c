@@ -144,21 +144,28 @@ void process_response(char *response_pipe, char option) {
         break;
     case 's':
         if (response->code == SUCCESS) {
-            GArray *keys = g_array_new(FALSE, FALSE, sizeof(int));
 
-            do {
-                g_array_append_val(keys, response->key);
-                delete_packet(response);
-                response = receive_packet(response_pipe_fd);
-            } while (response != NULL);
-                for (int i = 0; i < keys->len; i++) {
-                    if (i == 0) {
-                        printf("[%d, ", g_array_index(keys, int, i));
-                    } else if (i == keys->len - 1) {
-                        printf("%d]\n", g_array_index(keys, int, i));
-                    } else printf("%d, ", g_array_index(keys, int, i));
+            if (response->key == -1) {
+                printf("No documents were found\n");
+                
+            } else {
+                GArray *keys = g_array_new(FALSE, FALSE, sizeof(int));
+
+                do {
+                    g_array_append_val(keys, response->key);
+                    delete_packet(response);
+                    response = receive_packet(response_pipe_fd);
+                } while (response != NULL);
+                    for (int i = 0; i < keys->len; i++) {
+                        if (i == 0) {
+                            printf("[%d, ", g_array_index(keys, int, i));
+                        } else if (i == keys->len - 1) {
+                            printf("%d]\n", g_array_index(keys, int, i));
+                        } else printf("%d, ", g_array_index(keys, int, i));
+                }
+                g_array_free(keys, FALSE);
             }
-            g_array_free(keys, FALSE);
+
         } else {
             printf("No documents were found\n");
         }
@@ -199,6 +206,11 @@ int main(int argc, char **argv) {
 
     // Send request
     int request_pipe_fd = open_pipe(REQUEST_PIPE, O_WRONLY);
+    if (request_pipe_fd == -1) {
+        fprintf(stderr, "Server is not running\n");
+        delete_pipe(response_pipe);
+        exit(EXIT_FAILURE);
+    }
     send_packet(request, request_pipe_fd);
     delete_packet(request);
     close_pipe(request_pipe_fd);

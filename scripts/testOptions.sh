@@ -46,8 +46,8 @@ while IFS=$'\t' read -r filename title year authors; do
     bin/dclient -l $document_id "$keyword"
 
     # 3. Search by keyword (use second word of title as keyword, n_procs=1)
-    echo "--> Running: bin/dclient -s \"$keyword\" 1 (output truncated to 10 words)"
-    bin/dclient -s "$keyword" 1 | tr -s '[:space:]' ' ' | cut -d' ' -f1-10
+    echo "--> Running: bin/dclient -s \"$keyword\" 24 (output truncated to 10 words)"
+    bin/dclient -s "$keyword" 24 | tr -s '[:space:]' ' ' | cut -d' ' -f1-10
 
     # 4. Delete document
     echo "--> Running: bin/dclient -d $document_id"
