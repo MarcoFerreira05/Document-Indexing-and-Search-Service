@@ -241,7 +241,11 @@ int cacheDelete(int key) {
         g_list_free_1(page);
     }
 
-    
+    if(cacheGet(key) == NULL || key >= AddOffset){
+        //Chave ja eliminada ou não existe 
+        return -1;
+    }
+
     IndexPack BlankPack = g_malloc(sizeof(struct indexPackage));
     BlankPack->deleted = 1;
 
