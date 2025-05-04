@@ -8,7 +8,7 @@
 #include <ctype.h>
 
 int validate_number(char *str) {
-    for (int i = 0; i < strlen(str); i++) {
+    for (int i = 0; str[i] != '\0'; i++) {
         if (!isdigit(str[i])) {
             return 0;
         }
@@ -46,7 +46,7 @@ int validate_args(int argc, char **argv) {
         }
         break;
     case 'l':
-        if (argc != 2 || !validate_number(argv[2])) {
+        if (argc != 4 || !validate_number(argv[2])) {
             fprintf(stderr, "Usage: %s -l <document_id> <keyword>\n", argv[0]);
             return 0;
         }
@@ -94,8 +94,8 @@ Packet *create_request(int argc, char **argv, char option, pid_t pid) {
             return create_packet(COUNT_LINES, pid, atoi(argv[2]), -1, argv[3],
                                 NULL, NULL, NULL, NULL, -1);
         case 's':
-            int nr_procs = argc == 4 ? atoi(argv[3]) : 1;
-            return create_packet(SEARCH_DOCUMENTS, pid, -1, -1, argv[3],
+            int nr_procs = (argc == 4) ? atoi(argv[3]) : 1;
+            return create_packet(SEARCH_DOCUMENTS, pid, -1, -1, argv[2],
                                 NULL, NULL, NULL, NULL, nr_procs);
         case 'f':
             return create_packet(SHUTDOWN_SERVER, pid, -1, -1, NULL,
