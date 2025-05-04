@@ -41,7 +41,7 @@ int validate_args(int argc, char **argv) {
 
 void handle_add_document(Packet *request) {
 
-    int key = AddDocument(request->title, request->authors, request->year, request->path);
+    int key = add_document(request->title, request->authors, request->year, request->path);
 
     Packet *response;
     if (key == -1) {
@@ -62,7 +62,7 @@ void handle_add_document(Packet *request) {
 
 void handle_consult_document(Packet *request) {
 
-    char **metadata = consultDocument(request->key);
+    char **metadata = consult_document(request->key);
 
     Packet *response;
     if (metadata != NULL) {
@@ -84,7 +84,7 @@ void handle_consult_document(Packet *request) {
 void handle_delete_document(Packet *request) {
 
     Packet *response;
-    if (!deleteDocument(request->key)) {
+    if (!delete_document(request->key)) {
         response = create_packet(SUCCESS, -1, request->key, -1, NULL,
                                  NULL, NULL, NULL, NULL, -1);
     } else {

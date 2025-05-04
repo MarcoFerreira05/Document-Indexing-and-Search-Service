@@ -38,7 +38,7 @@ typedef struct indexPackage{
  * @param ToIndex Ponteiro para um array de strings que representa o documento a indexar.
  * @return Retorna a key onde o mesmo foi indexado ou -1 em caso de erro.
  */
-int AddDocument(char title[], char authors[], char year[], char path[]);
+int add_document(char title[], char authors[], char year[], char path[]);
 
 /**
  * @brief Remove um documento do índice.
@@ -49,7 +49,7 @@ int AddDocument(char title[], char authors[], char year[], char path[]);
  * @param key Chave do documento a ser removido.
  * @return Retorna 0 em caso de sucesso ou -1 em caso de erro.
  */
-int deleteDocument(int key);
+int delete_document(int key);
 
 /**
  * @brief Recupera os metadados de um documento indexado.
@@ -60,7 +60,7 @@ int deleteDocument(int key);
  * @return Ponteiro para a estrutura IndexPack contendo os metadados do documento,
  *         ou NULL em caso de erro.
  */
-char** consultDocument(int key);
+char** consult_document(int key);
 
 /**
  * @brief Lista todos os documentos indexados.
@@ -69,6 +69,6 @@ char** consultDocument(int key);
  *
  * @return Retorna 0 em caso de sucesso ou -1 em caso de erro.
  */
-GArray* AllValidKeys();
+GArray* all_valid_keys();
 
 #endif // COMMAND_H

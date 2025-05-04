@@ -20,14 +20,14 @@
 
 
 int search_keyword_in_file(int key, char *keyword, int one_ocurrence, char *folder_path) {
-    char **metainfo = consultDocument(key);
+    char **metadata = consult_document(key);
 
-    if (metainfo == NULL) {
+    if (metadata == NULL) {
         return -1;
     }
 
     char file_path[64];
-    snprintf(file_path, 64, "%s/%s", folder_path, metainfo[3]);
+    snprintf(file_path, 64, "%s/%s", folder_path, metadata[3]);
 
     int fildes[2];
     if(pipe(fildes) == -1) {
@@ -81,11 +81,11 @@ int search_keyword_in_file(int key, char *keyword, int one_ocurrence, char *fold
     line_count[bytes_read-1] = '\0';
 
     close(fildes[0]);
-    free(metainfo[0]);
-    free(metainfo[1]);
-    free(metainfo[2]);
-    free(metainfo[3]);
-    free(metainfo);
+    free(metadata[0]);
+    free(metadata[1]);
+    free(metadata[2]);
+    free(metadata[3]);
+    free(metadata);
 
     return atoi(line_count);
 }
@@ -93,7 +93,7 @@ int search_keyword_in_file(int key, char *keyword, int one_ocurrence, char *fold
 
 
 GArray* docs_with_keyword(char *keyword, char *folder_path) {
-    GArray *keys = AllValidKeys();
+    GArray *keys = all_valid_keys();
     GArray *docs_with_keyword = g_array_new(FALSE, TRUE, sizeof(int));
 
     int i, key;
@@ -110,7 +110,7 @@ GArray* docs_with_keyword(char *keyword, char *folder_path) {
 
 
 GArray* docs_with_keyword_concurrent(char *keyword, int number_procs, char *folder_path) {
-    GArray *keys = AllValidKeys();
+    GArray *keys = all_valid_keys();
 
     // pipe para enviar as chaves aos filhos
     int i, keys_pipe[2];

@@ -17,7 +17,7 @@
  * @param ToIndex Ponteiro para um array de strings que representa o documento a indexar.
  * @return Retorna a key onde o mesmo foi indexado ou -1 em caso de erro.
  */
-int AddDocument(char title[], char authors[], char year[], char path[]){
+int add_document(char title[], char authors[], char year[], char path[]){
 
     //Criação do pacote a ser indexado
     IndexPack PackToIndex = g_malloc(sizeof(struct indexPackage));
@@ -43,7 +43,7 @@ int AddDocument(char title[], char authors[], char year[], char path[]){
  * @param key Chave do documento a ser consultado.
  * @return Retorna o conteudo guardado na correspondente Key ou NULL em caso de erro PRECISA DE FREE.
  */
-char** consultDocument(int key){
+char** consult_document(int key){
     
     //Enviar key para consulta e retorna o conteudo (ou NULL em caso de erro)
     IndexPack PackToConsult = (IndexPack) cacheGet(key);    
@@ -74,11 +74,10 @@ char** consultDocument(int key){
  * @param key Chave do documento a ser removido.
  * @return Retorna 0 em caso de sucesso ou -1 em caso de erro.
  */
-int deleteDocument(int key){
+int delete_document(int key){
 
     if(cacheDelete(key) == -1){
         //Erro ao remover o documento
-        perror("Erro ao remover o documento");
         return -1;
     }
 
@@ -93,7 +92,7 @@ int deleteDocument(int key){
  *
  * @return Retorna 0 em caso de sucesso ou -1 em caso de erro.
  */
-GArray* AllValidKeys(){
+GArray* all_valid_keys(){
 
     return listDocuments();
 }

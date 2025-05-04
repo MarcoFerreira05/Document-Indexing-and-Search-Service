@@ -2,33 +2,9 @@
 #include <glib.h>
 #include <index.h>
 
-
-/*DEBUG
-
-void print_entry(gpointer key, gpointer value, gpointer user_data){
-    IndexPack data  = (IndexPack) value;
-    int keyuser = *(int*)key;
-    printf("Chave: %d | Valor: %s\n", keyuser, data->Title);
-}
-
-void print_hash_table(GHashTable *table) {
-    if (!table) {
-        printf("Tabela hash nula.\n");
-        return;
-    }
-
-    printf("\n=== Conteúdo da Tabela Hash ===\n");
-
-
-    g_hash_table_foreach(table, print_entry, NULL);
-}
-
---------------------------------*/
-
-
 int Cache_size = 10;
 GHashTable* Cache = NULL;
-GList* OnCache= NULL;
+GList* OnCache = NULL;
 int AddOffset = 0;
 
 typedef struct cachepage{
@@ -37,19 +13,7 @@ typedef struct cachepage{
     int dirty;
 
 } * CachePage;
-// Poderá ser char ao inves de int para poupar memoria 
-// Poderá ser usada uma GSList simpel ao invés da GList
 
-/*
-void print_glist_cachepages(GList *list) {
-    for (GList *l = list; l != NULL; l = l->next) {
-        CachePage page = (CachePage) l->data;
-        printf("[key: %d, ref: %d, dirty: %d] -> ", page->key, page->ref, page->dirty);
-    }
-    printf("NULL\n");
-}
-//_____
-*/
 //remove o LRU element from cache
 int cacheRemove(){
 
@@ -271,7 +235,6 @@ int cacheDelete(int key) {
         OnCache = g_list_delete_link(OnCache, page);
         
         free(searchPage);
-        g_list_free_1(page);
     }
 
     IndexPack BlankPack = g_malloc(sizeof(struct indexPackage));
@@ -279,9 +242,8 @@ int cacheDelete(int key) {
 
     if(IndexDeleteManager(key,BlankPack) == -1){
         //Erro ao remover o documento
-        perror("Erro ao remover o documento");
         return -1;
-    }else{
+    } else {
         return 0;
     }
 
