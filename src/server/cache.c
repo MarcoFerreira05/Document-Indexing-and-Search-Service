@@ -319,7 +319,7 @@ int cacheDestroy() {
 
 }
 
-GArray* listDocumentsPaths() {
+GArray* listDocuments() {
 
     GArray* documents = g_array_new(FALSE, FALSE, sizeof(int));
     
@@ -333,8 +333,7 @@ GArray* listDocumentsPaths() {
     for(int i = 0; i < AddOffset; i++){
         IndexPack pack = cacheGet(i);
         if(pack != NULL){
-            char* pathToKey = strdup(pack->path);
-            g_array_append_val(documents, pathToKey);    
+            g_array_append_val(documents, i);    
         }
     }
 

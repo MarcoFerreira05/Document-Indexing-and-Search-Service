@@ -60,8 +60,7 @@ int cacheDestroy();
 /**
  * @brief Lista todos os documentos presentes na cache.
  * 
- * @return Array com os caminhos de todos os documentos presentes. 
- * @note O array (e seus elementos) deve ser libertado após o uso.
+ * @return Array de inteiros contendo as chaves dos documentos presentes.
  */
-GArray* listDocumentsPaths();
+GArray* listDocuments();
 #endif // CACHE_H

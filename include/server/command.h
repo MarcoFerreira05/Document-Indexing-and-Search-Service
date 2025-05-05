@@ -65,9 +65,8 @@ char** consult_document(int key);
 /**
  * @brief Lista todos os documentos presentes na cache.
  * 
- * @return Array com os caminhos de todos os documentos presentes. 
- * @note O array (e seus elementos) deve ser libertado após o uso.
+ * @return Array de inteiros contendo as chaves dos documentos presentes.
  */
-GArray* all_valid_paths();
+GArray* all_valid_keys();
 
 #endif // COMMAND_H

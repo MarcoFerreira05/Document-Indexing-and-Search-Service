@@ -90,7 +90,7 @@ int delete_document(int key){
  * @return Array com os caminhos de todos os documentos presentes. 
  * @note O array (e seus elementos) deve ser libertado após o uso.
  */
-GArray* all_valid_paths(){
+GArray* all_valid_keys(){
 
-    return listDocumentsPaths();
+    return listDocuments();
 }
