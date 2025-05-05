@@ -19,15 +19,10 @@
 }*/
 
 
-int search_keyword_in_file(int key, char *keyword, int one_ocurrence, char *folder_path) {
-    char **metadata = consult_document(key);
-
-    if (metadata == NULL) {
-        return -1;
-    }
+int search_keyword_in_file(char *keyword, char *relative_file_path, int one_ocurrence, char *folder_path) {
 
     char file_path[64];
-    snprintf(file_path, 64, "%s/%s", folder_path, metadata[3]);
+    snprintf(file_path, 64, "%s/%s", folder_path, relative_file_path);
 
     int fildes[2];
     if(pipe(fildes) == -1) {
@@ -81,11 +76,6 @@ int search_keyword_in_file(int key, char *keyword, int one_ocurrence, char *fold
     line_count[bytes_read-1] = '\0';
 
     close(fildes[0]);
-    free(metadata[0]);
-    free(metadata[1]);
-    free(metadata[2]);
-    free(metadata[3]);
-    free(metadata);
 
     return atoi(line_count);
 }

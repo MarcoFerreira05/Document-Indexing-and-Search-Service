@@ -21,7 +21,7 @@
  * 
  * @return Número de ocorrências da @c keyword , ou -1 em caso de erro.
  */
-int search_keyword_in_file(int key, char *keyword, int one_ocurrence, char *folder_path);
+int search_keyword_in_file(char *keyword, char *relative_file_path, int one_ocurrence, char *folder_path);
 
 
 /**

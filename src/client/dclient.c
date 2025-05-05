@@ -146,8 +146,7 @@ void process_response(char *response_pipe, char option) {
         if (response->code == SUCCESS) {
 
             if (response->key == -1) {
-                printf("No documents were found\n");
-                
+                printf("No documents were found\n");  
             } else {
                 GArray *keys = g_array_new(FALSE, FALSE, sizeof(int));
 
@@ -165,9 +164,8 @@ void process_response(char *response_pipe, char option) {
                 }
                 g_array_free(keys, FALSE);
             }
-
         } else {
-            printf("No documents were found\n");
+            printf("Failed to search documents\n");
         }
         break;
     case 'f':
