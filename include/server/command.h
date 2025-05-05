@@ -63,12 +63,11 @@ int delete_document(int key);
 char** consult_document(int key);
 
 /**
- * @brief Lista todos os documentos indexados.
- *
- * Esta função exibe uma lista de todos os documentos atualmente indexados no sistema.
- *
- * @return Retorna 0 em caso de sucesso ou -1 em caso de erro.
+ * @brief Lista todos os documentos presentes na cache.
+ * 
+ * @return Array com os caminhos de todos os documentos presentes. 
+ * @note O array (e seus elementos) deve ser libertado após o uso.
  */
-GArray* all_valid_keys();
+GArray* all_valid_paths();
 
 #endif // COMMAND_H
