@@ -31,11 +31,10 @@ int validate_args(int argc, char **argv) {
         return 0;
     }
 
-    if (argc == 3 && (!validate_number(argv[2]) || atoi(argv[2]) <= 0)) {
+    if (argc == 3 && (!validate_number(argv[2]) || atoi(argv[2]) < 0)) {
         fprintf(stderr, "Cache size must be a positive integer\n");
         return 0;
     }
-
     return 1;
 }
 

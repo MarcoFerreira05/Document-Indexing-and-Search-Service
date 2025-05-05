@@ -55,6 +55,8 @@ while IFS=$'\t' read -r filename title year authors; do
 
 done < <(tail -n +2 "$INPUT_FILE")
 
+echo "------------------------"
+
 # 5. Delete document
 echo "--> Running: bin/dclient -f"
 bin/dclient -f
