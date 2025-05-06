@@ -28,7 +28,7 @@ int cacheInit(int size);
  * @param value Ponteiro para o valor a ser adicionado.
  * @return Chave gerada para o novo valor, ou -1 em caso de erro.
  */
-int cacheAdd(void *value);
+int cacheAdd(IndexPack value);
 
 /**
  * @brief Recupera um valor da a sua chave.

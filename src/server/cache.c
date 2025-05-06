@@ -26,17 +26,19 @@ void print_hash_table(GHashTable *table) {
 --------------------------------*/
 
 
-int Cache_size = 10;
-GHashTable* Cache = NULL;
-GList* OnCache= NULL;
-int AddOffset = 0;
-
 typedef struct cachepage{
     int key;
     int ref;
     int dirty;
 
-} * CachePage;
+}* CachePage;
+
+int Cache_size = 10;
+GHashTable* Cache = NULL;
+CachePage* OnCache= NULL;
+int AddOffset = 0;
+int OnCacheUsado = 0;
+
 // Poderá ser char ao inves de int para poupar memoria 
 // Poderá ser usada uma GSList simpel ao invés da GList
 
@@ -52,21 +54,15 @@ void print_glist_cachepages(GList *list) {
 */
 //remove o LRU element from cache
 int cacheRemove(){
-
     
-    //Remover o LRU element
-    GList* emCheck = g_list_first(OnCache);
-    
-    //print_glist_cachepages(emCheck);
-    
-    while(emCheck != NULL){
+    for(int i = 0; i < Cache_size; i++){
 
         //print_hash_table(Cache);
 
         //printf("Visiting key %d\n", *(int*)emCheck->data);
-        CachePage cachePage = (CachePage)emCheck->data;
-        if(cachePage->ref == 1){
-            cachePage->ref = 0;
+        CachePage cachePage = OnCache[i];
+        if(cachePage->ref >0){
+            cachePage->ref--;
         }
         else
         {
@@ -81,27 +77,35 @@ int cacheRemove(){
                 }
                 cachePage->dirty = 0;
             }
-            
             //printf("Removing key %d from cache\n", cachePage->key);
             IndexPack pack = g_hash_table_lookup(Cache, &cachePage->key);
             if(pack != NULL){
                 g_hash_table_remove(Cache, &cachePage->key);
-                OnCache = g_list_delete_link(OnCache, emCheck);
+                OnCacheUsado--;
+                free(pack);
+                return i;
             }
             //printf("Cache after removing key\n");
             //print_glist_cachepages(g_list_first(OnCache));
             break;
         }
-        
-            
-        if(emCheck->next == NULL){
-            emCheck = g_list_first(OnCache);
-        }else{
-            emCheck = emCheck->next;
+
+        if(i == Cache_size-1){
+           i = 0;
         }
     }
 
-    return 0;
+    return -1;
+}
+
+int searchForDeletedSpace(){
+    for(int i = 0; i < Cache_size; i++){
+        CachePage cachePage = OnCache[i];
+        if(cachePage->ref == -1){
+            return i;
+        }
+    }
+    return -1;
 }
 
 int cacheInit(int CacheSize) {
@@ -113,6 +117,12 @@ int cacheInit(int CacheSize) {
 
         Cache = g_hash_table_new_full(g_int_hash, g_int_equal, g_free, g_free);
 
+        if(Cache == NULL){
+            perror("Failed to create cache");
+            return -1;
+        }
+
+        OnCache = calloc(Cache_size,sizeof(struct cachepage));
 
         if(Cache == NULL){
             perror("Failed to create cache");
@@ -128,7 +138,43 @@ int cacheInit(int CacheSize) {
 
 }
 
-int cacheAdd(void *value) {
+int insertOntoCache(int key, IndexPack value,int isDirty) {
+    //printf("\n\n\n-Request to add value to cache with key %d\n",key);
+    CachePage page = malloc(sizeof(struct cachepage));
+    if(page == NULL){
+        perror("Failed to allocate memory for cache page");
+        return -1;
+      }
+
+    page->key = key;
+    page->ref = 1;
+    page->dirty = isDirty;
+    
+    
+    int writePageIndex = OnCacheUsado;
+    if(OnCacheUsado >= Cache_size){
+        //Se a cache estiver cheia, remover o LRU element
+        //printf("Cache is full, removing LRU element\n");
+        if((writePageIndex = searchForDeletedSpace()) != -1){
+            
+        }else if((writePageIndex = cacheRemove()) == -1){
+            perror("Failed to remove LRU element from cache");
+            return -1;
+        }
+    }
+    
+    //printf("\nAdded key %d to cache\n", key);
+    int *key_ptr = malloc(sizeof(int));
+    *key_ptr = key;
+
+    value->deleted = writePageIndex;
+    g_hash_table_insert(Cache, key_ptr, value);
+    OnCache[writePageIndex] = page;
+    OnCacheUsado++;
+    return 0;
+}
+
+int cacheAdd(IndexPack value) {
 
     if(Cache == NULL){
         puts("Cache not initialized\n");
@@ -141,34 +187,12 @@ int cacheAdd(void *value) {
     int key = AddOffset;    
     AddOffset ++; 
 
-    //printf("\n\n\n-Request to add value to cache with key %d\n",key);
-    CachePage page = malloc(sizeof(struct cachepage));
-    if(page == NULL){
-        perror("Failed to allocate memory for cache page");
+    if (insertOntoCache(key, value,1) == 1){
+        perror("Failed to insert value into cache");
         return -1;
-      }
-
-    page->key = key;
-    page->ref = 1;
-    page->dirty = 1;
-
-    if(g_list_length(OnCache) >= Cache_size){
-        //Se a cache estiver cheia, remover o LRU element
-        //printf("Cache is full, removing LRU element\n");
-        if(cacheRemove() == -1){
-            perror("Failed to remove LRU element from cache");
-            return -1;
-        }
     }
-    
-    //printf("\nAdded key %d to cache\n", key);
-    int *key_ptr = malloc(sizeof(int));
-    *key_ptr = key;
-    g_hash_table_insert(Cache, key_ptr, value);
-    OnCache = g_list_append(OnCache, page);
-    //print_glist_cachepages(g_list_first(OnCache));
-    return key;
 
+    return key;
 }
 
 
@@ -195,26 +219,10 @@ void* cacheGet(int key) {
             return NULL;
         }
         else{
-            //Adicionar à cache
-            CachePage page = malloc(sizeof(struct cachepage));
-            if(page == NULL){
-                perror("Failed to allocate memory for cache page\n");
+            if(insertOntoCache(key, pack,0)){
+                perror("Failed to insert value into cache");
                 return NULL;
-              }
-            page->key = key;
-            page->ref = 1;
-            page->dirty = 0;
-            
-            if(g_list_length(OnCache) >= Cache_size){
-                //Se a cache estiver cheia, remover o LRU element
-                if(cacheRemove() == -1){
-                    perror("Failed to remove LRU element from cache");
-                    return NULL;
-                }
             }
-
-            g_hash_table_insert(Cache, &page->key, pack);
-            OnCache = g_list_append(OnCache, page);
         }
 
     }
@@ -223,7 +231,7 @@ void* cacheGet(int key) {
 
 }
 
-
+/*
 gint CompareCachePages(  gconstpointer a,gconstpointer b){
 
     CachePage EmCache = (CachePage) a; 
@@ -238,7 +246,7 @@ gint CompareCachePages(  gconstpointer a,gconstpointer b){
         return -1;
     }
 }
-
+*/
 
 int cacheDelete(int key) {
 
@@ -258,19 +266,11 @@ int cacheDelete(int key) {
     //Verifica se o documento existe no cache e elimina da cache
     IndexPack pack = g_hash_table_lookup(Cache, &key);
     if(pack != NULL){
+        int indice = pack->deleted;
+        OnCache[indice]->ref = -1;
+        OnCache[indice]->dirty = 0;
         g_hash_table_remove(Cache, &key);
-        
-        CachePage searchPage = malloc(sizeof(struct cachepage));
-        if(searchPage == NULL){
-            perror("Failed to allocate memory for cache page");
-            return -1;
-        }
-        searchPage->key = key;
-
-        GList* page = g_list_find_custom(OnCache, searchPage, (GCompareFunc)CompareCachePages);
-        OnCache = g_list_delete_link(OnCache, page);
-        
-        free(searchPage);
+    
     }
 
     IndexPack BlankPack = g_malloc(sizeof(struct indexPackage));
@@ -295,9 +295,8 @@ int cacheDestroy() {
     }
 
     //Iterar sobre a lista de páginas escrever em disco os elementos "dirty" da cache e liberar a memória
-    GList* page = OnCache;
-    while(page != NULL){
-        CachePage cachePage = (CachePage)page->data;
+    for(int i = 0;i < OnCacheUsado;i++){
+        CachePage cachePage = OnCache[i];
         if(cachePage->dirty == 1){
             IndexPack pack = g_hash_table_lookup(Cache, &cachePage->key);
             if(pack != NULL){
@@ -306,13 +305,10 @@ int cacheDestroy() {
                     return -1;
                 }
             }
-            cachePage->dirty = 0;
+            free(pack);
         }
-        
-        page = page->next;
     }
     
-    g_list_free(OnCache);
     g_hash_table_destroy(Cache);
     Cache = NULL;
     return 0;
