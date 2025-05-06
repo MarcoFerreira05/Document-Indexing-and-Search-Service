@@ -124,6 +124,17 @@ void handle_delete_document(Packet *request) {
 void handle_count_lines(Packet *request, char *folder_path) {
     
     char **metadata = consult_document(request->key);
+    if (metadata == NULL) {
+        Packet *response = create_packet(FAILURE, -1, -1, -1, NULL,
+                                         NULL, NULL, NULL, NULL, -1);
+        char response_pipe[MAX_PIPE_SIZE];
+        snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
+        int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
+        send_packet(response, response_pipe_fd);
+        delete_packet(response);
+        close_pipe(response_pipe_fd);
+        return;
+    }
     char path[MAX_PATH_SIZE];
     strcpy(path, metadata[3]);
     
