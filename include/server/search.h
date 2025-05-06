@@ -14,14 +14,14 @@
  * O argumento @c one_ocurrence deve ser falso (0) se estiver a ser feita uma procura -l.
  * Deve ser verdadeiro (!=0) quando esta função é invocada como auxiliar para as procuras -s.
  * 
- * @param key Chave da meta-informação do ficheiro.
  * @param keyword Palavra a procurar.
+ * @param file_name Nome do ficheiro.
  * @param one_ocurrence Indica se só se pretende encontrar a 1ª ocorrência da palavra.
  * @param folder_path Caminho para a pasta que foi passado ao servidor na inicialização do mesmo.
  * 
  * @return Número de ocorrências da @c keyword , ou -1 em caso de erro.
  */
-int search_keyword_in_file(char *keyword, char *relative_file_path, int one_ocurrence, char *folder_path);
+int search_keyword_in_file(char *keyword, char *file_name, int one_ocurrence, char *folder_path);
 
 
 /**
