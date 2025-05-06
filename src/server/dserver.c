@@ -38,7 +38,11 @@ int validate_args(int argc, char **argv) {
     return 1;
 }
 
-void terminate_child() {
+void send_response(){
+    
+}
+
+void terminate_child_request() {
     // Child process requests parent to be terminated
     int request_pipe_fd = open_pipe(REQUEST_PIPE, O_WRONLY);
     Packet *terminate_request = create_packet(TERMINATE_CHILD, getpid(), -1, -1, NULL,
@@ -87,7 +91,7 @@ void handle_consult_document(Packet *request) {
         for (int i = 0; i < 4; i++) {
             free(metadata[i]);
         }
-        free (metadata);
+        free(metadata);
     }
 
     char response_pipe[MAX_PIPE_SIZE];
@@ -122,6 +126,7 @@ void handle_count_lines(Packet *request, char *folder_path) {
     char **metadata = consult_document(request->key);
     char path[MAX_PATH_SIZE];
     strcpy(path, metadata[3]);
+    
     for (int i = 0; i < 4; i++) {
         free(metadata[i]);
     }
@@ -148,14 +153,14 @@ void handle_count_lines(Packet *request, char *folder_path) {
         delete_packet(response);
         close_pipe(response_pipe_fd);
 
-        terminate_child();
+        terminate_child_request();
 
     } else if (pid < 0) {
         // Fork failed
+        perror("Fork failed\n");
         char response_pipe[MAX_PIPE_SIZE];
         snprintf(response_pipe, MAX_PIPE_SIZE, RESPONSE_PIPE_TEMPLATE, request->src_pid);
         int response_pipe_fd = open_pipe(response_pipe, O_WRONLY);
-        perror("Fork failed\n");
         Packet *response = create_packet(FAILURE, -1, -1, -1, NULL,
                                          NULL, NULL, NULL, NULL, -1);
         send_packet(response, response_pipe_fd);
@@ -203,7 +208,7 @@ void handle_search_documents(Packet *request, char *folder_path) {
         g_array_free(keys, FALSE);
         close_pipe(response_pipe_fd);
 
-        terminate_child();
+        terminate_child_request();
 
     } else if (pid < 0) {
         // Fork failed
@@ -255,6 +260,9 @@ void handle_request(Packet *request, char *documents_folder) {
         case SHUTDOWN_SERVER:
             handle_shutdown_server(request);
             break;
+        case TERMINATE_CHILD:
+            waitpid(request->src_pid, NULL, 0);
+            break;
         default:
             puts("Invalid request type\n");
     }
@@ -277,11 +285,7 @@ void server_run(char *documents_folder, int cache_size) {
         // Receive request
         Packet *request = receive_packet(request_pipe_fd);
         if (request != NULL) {
-            if (request->code == TERMINATE_CHILD) {
-                waitpid(request->src_pid, NULL, 0);
-            } else {
-                handle_request(request, documents_folder);
-            }
+            handle_request(request, documents_folder);
             delete_packet(request);
         } else {
             // Error receiving request
