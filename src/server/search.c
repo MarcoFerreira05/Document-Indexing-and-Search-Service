@@ -19,10 +19,10 @@
 }*/
 
 
-int search_keyword_in_file(char *keyword, char *relative_file_path, int one_ocurrence, char *folder_path) {
+int search_keyword_in_file(char *keyword, char *file_name, int one_ocurrence, char *folder_path) {
 
     char file_path[64];
-    snprintf(file_path, 64, "%s/%s", folder_path, relative_file_path);
+    snprintf(file_path, 64, "%s/%s", folder_path, file_name);
 
     int fildes[2];
     if(pipe(fildes) == -1) {
@@ -44,12 +44,12 @@ int search_keyword_in_file(char *keyword, char *relative_file_path, int one_ocur
             close(fildes[1]);
             return -1;
         }
-        if(!one_ocurrence && execlp("grep", "grep", "-c", keyword, file_path, NULL) == -1) {
+        if(!one_ocurrence && execlp("grep", "grep", "-w", "-c", keyword, file_path, NULL) == -1) {
             perror("execlp");
             close(fildes[1]);
             _exit(-1);
         }
-        else if(one_ocurrence && execlp("grep", "grep", "-c", "-m", "1", keyword, file_path, NULL) == -1) {
+        else if(one_ocurrence && execlp("grep", "grep", "-w", "-c", "-m", "1", keyword, file_path, NULL) == -1) {
             perror("execlp");
             close(fildes[1]);
             _exit(-1);
@@ -86,10 +86,17 @@ GArray* docs_with_keyword(char *keyword, char *folder_path) {
     GArray *keys = all_valid_keys();
     GArray *docs_with_keyword = g_array_new(FALSE, TRUE, sizeof(int));
 
-    int i, key;
+    int i, j, key;
+    char **metadata = NULL;
     for(i = 0; i < keys->len; i++) {
         key = g_array_index(keys, int, i);
-        if(search_keyword_in_file(key, keyword, 1, folder_path) > 0) g_array_append_val(docs_with_keyword, key);
+        metadata = consult_document(key);
+        
+        if(search_keyword_in_file(keyword, metadata[3], 1, folder_path) > 0)
+            g_array_append_val(docs_with_keyword, key);
+
+        for(j = 0; j < 4; j++) free(metadata[j]);
+        free(metadata);
     }
 
     g_array_free(keys, FALSE);
@@ -133,9 +140,12 @@ GArray* docs_with_keyword_concurrent(char *keyword, int number_procs, char *fold
             close(found_pipe[0]);
 
             ssize_t br;
-            int key;
+            int key, i;
+            char **metadata = NULL;
             while((br = read(keys_pipe[0], &key, sizeof(int))) != 0) {
-                if(search_keyword_in_file(key, keyword, 1, folder_path) > 0) {
+                metadata = consult_document(key);
+
+                if(search_keyword_in_file(keyword, metadata[3], 1, folder_path) > 0) {
                     if(write(found_pipe[1], &key, sizeof(int)) == -1) {
                         perror("write");
                         close(keys_pipe[0]);
@@ -143,6 +153,9 @@ GArray* docs_with_keyword_concurrent(char *keyword, int number_procs, char *fold
                         _exit(-1);
                     }
                 }
+
+                for(i = 0; i < 4; i++) free(metadata[i]);
+                free(metadata);
             }
             
             close(keys_pipe[0]);
