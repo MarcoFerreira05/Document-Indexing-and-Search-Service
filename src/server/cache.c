@@ -70,6 +70,7 @@ int cacheRemove(){
             if(cachePage->dirty == 1){
                 IndexPack pack = g_hash_table_lookup(Cache, &cachePage->key);
                 if(pack != NULL){
+                    pack->deleted = 0;
                     if(IndexAddManager(pack,cachePage->key) == -1){
                         //os erros são impressos na função de add
                         return -1;
@@ -141,10 +142,11 @@ int cacheInit(int CacheSize) {
 int insertOntoCache(int key, IndexPack value,int isDirty) {
     //printf("\n\n\n-Request to add value to cache with key %d\n",key);
     CachePage page = malloc(sizeof(struct cachepage));
+    
     if(page == NULL){
         perror("Failed to allocate memory for cache page");
         return -1;
-      }
+    }
 
     page->key = key;
     page->ref = 1;
@@ -152,7 +154,7 @@ int insertOntoCache(int key, IndexPack value,int isDirty) {
     
     
     int writePageIndex = OnCacheUsado;
-    if(OnCacheUsado >= Cache_size){
+    if(OnCacheUsado >= Cache_size && Cache_size > 1){
         //Se a cache estiver cheia, remover o LRU element
         //printf("Cache is full, removing LRU element\n");
         if((writePageIndex = searchForDeletedSpace()) != -1){
@@ -211,6 +213,7 @@ void* cacheGet(int key) {
 
     IndexPack pack = g_hash_table_lookup(Cache, &key);
 
+
     if(pack == NULL){
         pack =  IndexConsultManager(key);
        
@@ -225,6 +228,11 @@ void* cacheGet(int key) {
             }
         }
 
+    }else{
+        CachePage cachePage = OnCache[pack->deleted];
+        if(cachePage->ref < 2){
+            cachePage->ref++;
+        }
     }
 
     return pack;
@@ -300,6 +308,7 @@ int cacheDestroy() {
         if(cachePage->dirty == 1){
             IndexPack pack = g_hash_table_lookup(Cache, &cachePage->key);
             if(pack != NULL){
+                pack->deleted = 0;
                 if(IndexAddManager(pack,cachePage->key) == -1){
                     perror("Failed to write cache page to disk");
                     return -1;
