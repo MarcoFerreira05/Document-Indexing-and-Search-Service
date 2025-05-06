@@ -82,7 +82,7 @@ int cacheRemove(){
             if(pack != NULL){
                 g_hash_table_remove(Cache, &cachePage->key);
                 OnCacheUsado--;
-                free(pack);
+                //free(pack);
                 return i;
             }
             //printf("Cache after removing key\n");
@@ -305,7 +305,7 @@ int cacheDestroy() {
                     return -1;
                 }
             }
-            free(pack);
+            //free(pack);
         }
     }
     
