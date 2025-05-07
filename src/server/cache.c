@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <glib.h>
 #include <index.h>
+#include <stdlib.h>
 
 
 /*DEBUG
@@ -66,9 +67,10 @@ int cacheRemove(){
         }
         else
         {
+            IndexPack pack = g_hash_table_lookup(Cache, &cachePage->key);
             //printf("Saving key %d on disk\n", cachePage->key);
             if(cachePage->dirty == 1){
-                IndexPack pack = g_hash_table_lookup(Cache, &cachePage->key);
+                
                 if(pack != NULL){
                     pack->deleted = 0;
                     if(IndexAddManager(pack,cachePage->key) == -1){
@@ -79,7 +81,6 @@ int cacheRemove(){
                 cachePage->dirty = 0;
             }
             //printf("Removing key %d from cache\n", cachePage->key);
-            IndexPack pack = g_hash_table_lookup(Cache, &cachePage->key);
             if(pack != NULL){
                 g_hash_table_remove(Cache, &cachePage->key);
                 OnCacheUsado--;
@@ -92,17 +93,49 @@ int cacheRemove(){
         }
 
         if(i == Cache_size-1){
-           i = 0;
+           i = -1;
         }
     }
 
     return -1;
 }
+/*
+int cacheRemove(){
+    
+    
+    int i = rand() % Cache_size;
+
+    CachePage cachePage = OnCache[i];
+    IndexPack pack = g_hash_table_lookup(Cache, &cachePage->key);
+    //printf("Saving key %d on disk\n", cachePage->key);
+    if(cachePage->dirty == 1){
+        
+        if(pack != NULL){
+            pack->deleted = 0;
+            if(IndexAddManager(pack,cachePage->key) == -1){
+                //os erros são impressos na função de add
+                return -1;
+            }
+        }
+        cachePage->dirty = 0;
+    }
+    //printf("Removing key %d from cache\n", cachePage->key);
+    if(pack != NULL){
+        g_hash_table_remove(Cache, &cachePage->key);
+        OnCacheUsado--;
+        //free(pack);
+        return i;
+    }
+    //printf("Cache after removing key\n");
+    //print_glist_cachepages(g_list_first(OnCache));
+
+    return i;
+}*/
 
 int searchForDeletedSpace(){
     for(int i = 0; i < Cache_size; i++){
         CachePage cachePage = OnCache[i];
-        if(cachePage->ref == -1){
+        if(cachePage == NULL){
             return i;
         }
     }
@@ -154,7 +187,7 @@ int insertOntoCache(int key, IndexPack value,int isDirty) {
     
     
     int writePageIndex = OnCacheUsado;
-    if(OnCacheUsado >= Cache_size && Cache_size > 1){
+    if(OnCacheUsado >= Cache_size){
         //Se a cache estiver cheia, remover o LRU element
         //printf("Cache is full, removing LRU element\n");
         if((writePageIndex = searchForDeletedSpace()) != -1){
@@ -215,6 +248,7 @@ void* cacheGet(int key) {
 
 
     if(pack == NULL){
+        
         pack =  IndexConsultManager(key);
        
         if(pack == NULL || pack->deleted == 1){
@@ -229,6 +263,7 @@ void* cacheGet(int key) {
         }
 
     }else{
+        
         CachePage cachePage = OnCache[pack->deleted];
         if(cachePage->ref < 2){
             cachePage->ref++;
@@ -275,8 +310,8 @@ int cacheDelete(int key) {
     IndexPack pack = g_hash_table_lookup(Cache, &key);
     if(pack != NULL){
         int indice = pack->deleted;
-        OnCache[indice]->ref = -1;
-        OnCache[indice]->dirty = 0;
+        free(OnCache[indice]);
+        OnCache[indice] = NULL;
         g_hash_table_remove(Cache, &key);
     
     }
@@ -305,7 +340,9 @@ int cacheDestroy() {
     //Iterar sobre a lista de páginas escrever em disco os elementos "dirty" da cache e liberar a memória
     for(int i = 0;i < OnCacheUsado;i++){
         CachePage cachePage = OnCache[i];
-        if(cachePage->dirty == 1){
+        if(cachePage == NULL){
+        }
+        else if( cachePage->dirty == 1){
             IndexPack pack = g_hash_table_lookup(Cache, &cachePage->key);
             if(pack != NULL){
                 pack->deleted = 0;
