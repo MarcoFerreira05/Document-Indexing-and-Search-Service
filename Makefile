@@ -11,10 +11,12 @@ OBJ_FILES := $(patsubst src/%.c, obj/%.o, $(SRC_FILES))
 SERVER_OBJ_FILES := $(patsubst src/%.c, obj/%.o, $(SERVER_SRC_FILES))
 CLIENT_OBJ_FILES := $(patsubst src/%.c, obj/%.o, $(CLIENT_SRC_FILES))
 
-all: dserver dclient
+all: folders dserver dclient
 
 dserver: bin/dserver
 dclient: bin/dclient
+folders:
+	@mkdir -p src include bin tmp obj
 
 bin/dserver: $(SERVER_OBJ_FILES)
 	$(CC) $^ -o $@ $(LDFLAGS)
