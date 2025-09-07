@@ -25,18 +25,12 @@ The main goals of this project are:
 The server program is responsible for indexing the documents and answering the search requests, whereas
 the client program makes requests to the server when invoked. 
 This communication is accomplished using named pipes, through which clients send one of the following requests:
-1. dclient -a "title" "authors" "year" "path"
-Tells the server to index a new document. A unique key must be returned to the client.
-2. dclient -c "key"
-Asks the server for the metadata of an indexed document.
-3. dclient -d "key"
-Tells the server to remove the indexed metadata referring to that key.
-4. dclient -l "key" "keyword"
-The server must return to the client the number of lines of a given document containing the keyword.
-5. dclient -s "keyword"
-Asks the server for all the keys of documents containing the keyword.
-6. dclient -f
-Shut down the server.
+1. dclient -a "title" "authors" "year" "path" - Tells the server to index a new document. A unique key must be returned to the client.
+2. dclient -c "key" - Asks the server for the metadata of an indexed document.
+3. dclient -d "key" - Tells the server to remove the indexed metadata referring to that key.
+4. dclient -l "key" "keyword" - The server must return to the client the number of lines of a given document containing the keyword.
+5. dclient -s "keyword" - Asks the server for all the keys of documents containing the keyword.
+6. dclient -f - Shut down the server.
 To implement the -l and -s options, the grep utility was used. In short, grep is executed in a child process of the server, which returns the result through an anonymous pipe. Futhermore, -c, -l and -s shouldn't block future clients, so they're executed in parallel.
 
 From the base implementation, it was required to apply some optimizations to the server program:
