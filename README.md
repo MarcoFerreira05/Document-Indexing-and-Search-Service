@@ -31,6 +31,7 @@ This communication is accomplished using named pipes, through which clients send
 4. dclient -l "key" "keyword" - The server must return to the client the number of lines of a given document containing the keyword.
 5. dclient -s "keyword" - Asks the server for all the keys of documents containing the keyword.
 6. dclient -f - Shut down the server.
+
 To implement the -l and -s options, the grep utility was used. In short, grep is executed in a child process of the server, which returns the result through an anonymous pipe. Futhermore, -c, -l and -s shouldn't block future clients, so they're executed in parallel.
 
 From the base implementation, it was required to apply some optimizations to the server program:
